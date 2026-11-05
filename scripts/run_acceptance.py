@@ -98,7 +98,7 @@ if log is not None:
         check(key in caps.index, f"Missing IQR cap log entry {key}")
         if key in caps.index:
             check(close(caps.loc[key, "old_footfall"], old_value), f"Wrong old IQR value for {key}")
-            check(close(caps.loc[key, "new_footfall"], new_value, 1.0), f"Wrong capped value for {key}")
+            check(close(caps.loc[key, "new_footfall"], new_value), f"Wrong capped value for {key}")
     imputes = log[log["rule"] == "median_impute"].set_index(["store", "date"])
     expected_imputes = [
         (("Mumbai", "2026-04-30"), 2386.0),
