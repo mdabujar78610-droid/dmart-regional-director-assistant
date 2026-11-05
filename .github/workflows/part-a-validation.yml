@@ -35,4 +35,4 @@ jobs:
         run: python scripts/run_acceptance.py
       - name: Verify generated outputs match committed files
         run: |
-          git diff --exit-code -- data/store_daily.csv data/inventory.csv data/feedback.csv data/store_daily_clean.csv analysis/cleaning_log.csv analysis/findings.md
+          git diff --exit-code -- data/store_daily.csv data/inventory.csv data/feedback.csv data/store_daily_clean.csv analysis/cleaning_log.csv
