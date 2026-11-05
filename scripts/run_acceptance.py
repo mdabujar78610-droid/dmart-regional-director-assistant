@@ -66,12 +66,12 @@ if clean is not None:
     }
     check(expected_features.issubset(clean.columns), "One or more required derived features are missing")
     if {"revenue_inr", "footfall", "marketing_spend_inr", "daily_target_inr", "date"}.issubset(clean.columns):
-        check(close(clean["revenue_per_footfall"], clean["revenue_inr"] / clean["footfall"]).all(), 
+        check(close(clean["revenue_per_footfall"], clean["revenue_inr"] / clean["footfall"]), 
               "Revenue-per-footfall values do not match source columns")
-        check(close(clean["marketing_efficiency"], clean["revenue_inr"] / clean["marketing_spend_inr"]).all(),
+        check(close(clean["marketing_efficiency"], clean["revenue_inr"] / clean["marketing_spend_inr"]),
               "Marketing-efficiency values do not match source columns")
         expected_achievement = clean["revenue_inr"] / clean["daily_target_inr"] * 100
-        check(close(clean["achievement_pct"], expected_achievement).all(),
+        check(close(clean["achievement_pct"], expected_achievement),
               "Achievement percentages do not match source columns")
         expected_weekend = pd.to_datetime(clean["date"]).dt.dayofweek.ge(5).map({True: "Yes", False: "No"})
         check((clean["weekend_flag"] == expected_weekend).all(), "Weekend flags do not match dates")
