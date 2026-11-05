@@ -11,7 +11,10 @@ def check(condition, message):
         errors.append(message)
 
 def close(actual, expected, tolerance=0.01):
-    return abs(float(actual) - expected) <= tolerance
+    difference = actual - expected
+    if hasattr(difference, "abs"):
+        return bool(difference.abs().le(tolerance).all())
+    return abs(float(difference)) <= tolerance
 
 required_paths = [
     DATA / "store_daily.csv", DATA / "inventory.csv", DATA / "feedback.csv",
