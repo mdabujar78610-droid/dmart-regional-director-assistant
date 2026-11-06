@@ -1,6 +1,6 @@
 """Seeded generator for the three practice datasets. Standard library only.
-Run from the repository root:  python Part-A/scripts/generate_data.py
-Writes Part-A/data/store_daily.csv, Part-A/data/inventory.csv and Part-A/data/feedback.csv.
+Run from the repository root:  python scripts/generate_data.py
+Writes data/store_daily.csv, data/inventory.csv and data/feedback.csv.
 """
 import csv
 import random

@@ -1,4 +1,4 @@
-"""Clean Part A daily store data. Run from the repository root: python Part-A/scripts/clean_data.py."""
+"""Clean Part A daily store data. Run from the repository root: python scripts/clean_data.py."""
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import pandas as pd
@@ -59,4 +59,4 @@ df.to_csv(DATA / "store_daily_clean.csv", index=False)
 pd.DataFrame(log_rows, columns=["store", "date", "old_footfall", "new_footfall", "rule"]).to_csv(ANALYSIS / "cleaning_log.csv", index=False)
 print(f"Rows: {original_rows} -> {len(df)}; duplicates removed: {duplicates_removed}")
 print("IQR bounds:", bounds)
-print("Wrote Part-A/data/store_daily_clean.csv and Part-A/analysis/cleaning_log.csv")
+print("Wrote data/store_daily_clean.csv and analysis/cleaning_log.csv")
