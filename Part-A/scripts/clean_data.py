@@ -1,4 +1,4 @@
-"""Clean Part A daily store data. Run from the repository root."""
+"""Clean Part A daily store data. Run from the repository root: python Part-A/scripts/clean_data.py."""
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import pandas as pd
@@ -12,7 +12,7 @@ ANALYSIS.mkdir(exist_ok=True)
 
 daily_path = DATA / "store_daily.csv"
 if not daily_path.exists():
-    raise FileNotFoundError(f"Missing {daily_path}; run python scripts/generate_data.py first")
+    raise FileNotFoundError(f"Missing {daily_path}; run python Part-A/scripts/generate_data.py first")
 df = pd.read_csv(daily_path)
 original_rows = len(df)
 df = df.drop_duplicates(keep="first").reset_index(drop=True)
@@ -59,4 +59,4 @@ df.to_csv(DATA / "store_daily_clean.csv", index=False)
 pd.DataFrame(log_rows, columns=["store", "date", "old_footfall", "new_footfall", "rule"]).to_csv(ANALYSIS / "cleaning_log.csv", index=False)
 print(f"Rows: {original_rows} -> {len(df)}; duplicates removed: {duplicates_removed}")
 print("IQR bounds:", bounds)
-print("Wrote data/store_daily_clean.csv and analysis/cleaning_log.csv")
+print("Wrote Part-A/data/store_daily_clean.csv and Part-A/analysis/cleaning_log.csv")

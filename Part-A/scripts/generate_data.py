@@ -1,14 +1,17 @@
 """Seeded generator for the three practice datasets. Standard library only.
-Run from the repository root:  python scripts/generate_data.py
-Writes data/store_daily.csv, data/inventory.csv and data/feedback.csv.
+Run from the repository root:  python Part-A/scripts/generate_data.py
+Writes Part-A/data/store_daily.csv, Part-A/data/inventory.csv and Part-A/data/feedback.csv.
 """
 import csv
-import os
 import random
+from pathlib import Path
 from datetime import date, timedelta
 
+ROOT = Path(__file__).resolve().parents[1]
+DATA = ROOT / "data"
+DATA.mkdir(parents=True, exist_ok=True)
+
 SEED = 2604
-os.makedirs("data", exist_ok=True)
 rng = random.Random(SEED)
 START = date(2026, 4, 1)
 DAYS = 90  # 2026-04-01 .. 2026-06-29
@@ -54,7 +57,7 @@ row("S01", 8)["footfall"] = 6100                # extreme high footfall
 for sid, off in [("S01", 40), ("S03", 60), ("S05", 15)]:
     daily.append(dict(row(sid, off)))           # 3 exact duplicate rows appended at the end
 
-with open("data/store_daily.csv", "w", newline="") as f:
+with (DATA / "store_daily.csv").open("w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(daily[0].keys()))
     w.writeheader()
     w.writerows(daily)
@@ -74,7 +77,7 @@ for r in inventory:                              # make the Amul Milk answer del
     if r["product_id"] == "P01":
         r["reorder_threshold"] = 100
         r["stock_units"] = {"Mumbai": 240, "Pune": 85, "Hyderabad": 40, "Bengaluru": 130, "Ahmedabad": 100}[r["store"]]
-with open("data/inventory.csv", "w", newline="") as f:
+with (DATA / "inventory.csv").open("w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(inventory[0].keys()))
     w.writeheader()
     w.writerows(inventory)
@@ -97,7 +100,7 @@ for sid, name, *_ in STORES:
                          "date": day.isoformat(), "rating": rating, "theme": theme})
 for i in [7, 33, 58, 71, 90, 104, 120, 133, 151, 166, 178, 195]:   # 12 unrated rows
     feedback[i]["rating"] = ""
-with open("data/feedback.csv", "w", newline="") as f:
+with (DATA / "feedback.csv").open("w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(feedback[0].keys()))
     w.writeheader()
     w.writerows(feedback)

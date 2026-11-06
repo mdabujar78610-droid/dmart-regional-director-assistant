@@ -4,9 +4,9 @@ on:
   push:
     branches: [main]
     paths:
-      - "scripts/**"
-      - "data/**"
-      - "analysis/**"
+      - "Part-A/scripts/**"
+      - "Part-A/data/**"
+      - "Part-A/analysis/**"
       - "requirements.txt"
       - ".github/workflows/part-a-validation.yml"
   workflow_dispatch:
@@ -26,13 +26,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Generate datasets
-        run: python scripts/generate_data.py
+        run: python Part-A/scripts/generate_data.py
       - name: Clean daily data
-        run: python scripts/clean_data.py
+        run: python Part-A/scripts/clean_data.py
       - name: Run analysis
-        run: python scripts/analyze.py
+        run: python Part-A/scripts/analyze.py
       - name: Run acceptance checks
-        run: python scripts/run_acceptance.py
+        run: python Part-A/scripts/run_acceptance.py
       - name: Verify generated outputs match committed files
         run: |
-          git diff --exit-code -- data/store_daily.csv data/inventory.csv data/feedback.csv data/store_daily_clean.csv analysis/cleaning_log.csv
+          git diff --exit-code -- Part-A/data/store_daily.csv Part-A/data/inventory.csv Part-A/data/feedback.csv Part-A/data/store_daily_clean.csv Part-A/analysis/cleaning_log.csv

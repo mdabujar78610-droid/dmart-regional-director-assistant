@@ -9,9 +9,9 @@ CLEAN_PATH = DATA / "store_daily_clean.csv"
 RAW_PATH = DATA / "store_daily.csv"
 
 if not CLEAN_PATH.exists():
-    raise FileNotFoundError("Missing data/store_daily_clean.csv; run python scripts/clean_data.py first")
+    raise FileNotFoundError("Missing Part-A/data/store_daily_clean.csv; run python Part-A/scripts/clean_data.py first")
 if not RAW_PATH.exists():
-    raise FileNotFoundError("Missing data/store_daily.csv; run python scripts/generate_data.py first")
+    raise FileNotFoundError("Missing Part-A/data/store_daily.csv; run python Part-A/scripts/generate_data.py first")
 
 df = pd.read_csv(CLEAN_PATH)
 required = {"store", "date", "revenue_inr", "footfall", "stockout_hours",
@@ -139,4 +139,4 @@ print(f"All stores revenue-footfall: {all_footfall_corr:.3f}")
 print(f"Pune revenue-stockout: {pune_stockout_corr:.3f}")
 print(f"Pune revenue-footfall: {pune_footfall_corr:.3f}")
 print(f"Raw deduplicated revenue-footfall correlation: {raw_footfall_corr:.3f}")
-print("Wrote analysis/findings.md")
+print("Wrote Part-A/analysis/findings.md")
