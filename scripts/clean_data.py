@@ -1,4 +1,4 @@
-"""Clean Part A daily store data. Run from the repository root: python scripts/clean_data.py."""
+
 from pathlib import Path
 from decimal import Decimal, ROUND_HALF_UP
 import pandas as pd
