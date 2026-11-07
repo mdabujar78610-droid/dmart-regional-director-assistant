@@ -1,4 +1,4 @@
-"""Validate Part A source data, cleaned output, logs and written reports."""
+
 from pathlib import Path
 import pandas as pd
 
