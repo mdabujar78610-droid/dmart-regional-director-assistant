@@ -31,15 +31,15 @@ dmart-regional-director-assistant/
 │   ├── data_context.md
 │   ├── agent_spec.md
 │   └── release_gate.md             # Part D deliverable; to be added
-├── agent/                          # Part C deliverables; to be added
+├── agent/                          # Part C conversational analytics agent
 ├── tools/                          # Part D weather tool; to be added
-├── tests/                          # Part D weather tests; to be added
-├── outputs/                        # Part C acceptance transcript; to be added
-├── logs/                            # Part C run log; to be added
+├── tests/                          # Part C regression tests; Part D weather tests
+├── outputs/                        # Part C smoke-test evidence
+├── logs/                            # Part C JSONL audit log
 └── eval/                            # Part D evaluation; to be added
 ```
 
-Part A and Part B are committed now. Part C and Part D are not yet implemented; their folders and files will be added as those stages are completed. The repository uses the required single `main` branch and one public repository.
+Parts A, B and C are represented in this repository. Part D (weather integration, evaluation suite and release decision) remains to be completed. The repository uses the required single `main` branch and one public repository.
 
 ## Setup and offline path
 
@@ -77,7 +77,7 @@ Run the Part A scripts in this order:
    python scripts/run_acceptance.py
    ```
 
-The generator is seeded and deterministic. Do not manually edit the three raw CSV files after generation. The cleaning script writes a separate cleaned file and an audit log. The Part C specification requires a local SQLite data layer; no hosted database is needed. Part D specifies a deterministic stub weather mode for offline evaluation.
+The generator is seeded and deterministic. Do not manually edit the three raw CSV files after generation. The cleaning script writes a separate cleaned file and an audit log. Part C uses a local in-memory SQLite data layer; no hosted database is needed. Part D specifies a deterministic stub weather mode for offline evaluation.
 
 ## Part A — Data foundation and premise test
 
@@ -90,6 +90,21 @@ See `analysis/data_quality_report.md`, `analysis/cleaning_log.csv`, `analysis/fi
 - `docs/requirement.md`: business goals, scope, approved metrics and prohibited actions.
 - `docs/data_context.md`: dataset schemas, quality facts, relationships and supported questions.
 - `docs/agent_spec.md`: conversational pipeline, intents, grounding, statuses, retries and acceptance criteria.
+
+
+
+## Part C — Grounded conversational analytics agent
+
+The extracted `agent/` package implements a deterministic, rule-based conversational analytics agent using only the approved cleaned daily, inventory and feedback datasets. It supports daily lookups, target-versus-actual checks, store comparisons, inventory threshold review, feedback summaries and a descriptive Pune diagnostic. It rejects prohibited metrics before querying, treats inventory as an undated snapshot, and does not infer causation from co-occurring signals.
+
+Run from the repository root:
+
+```bash
+python -m unittest discover -s tests -v
+python -m agent.run_agent
+```
+
+Each request writes one JSONL audit record to `logs/runs.jsonl`. The rule-based interpreter is deliberately bounded and may ask for clarification when wording or required details are unclear. Weather remains unavailable in Part C and is reserved for Part D.
 
 ## Rounding method
 
