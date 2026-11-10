@@ -73,7 +73,7 @@ class Agent:
    except (ValidationError,ValueError) as exc: status='Safe Failure'; error=str(exc); answer='Data validation failed; no unapproved metric was queried.'
    except (DataAccessError,FileNotFoundError,OSError) as exc: status='Escalated'; error=str(exc); answer='A data access failure prevented a reliable answer.'; attempts=min(max(attempts,1),3)
   record={'timestamp':time.strftime('%Y-%m-%dT%H:%M:%S'),'request_id':str(uuid.uuid4()),'question':question,'intent':intent,'confidence':p['confidence'],'route':route,'dataset':evidence,'approved_metrics':p['metric'],'filters':{'store':p['store'],'date':p['date'],'date_range':p['date_range'],'product':p['product']},'attempt_count':attempts,'validation':'passed' if status=='Answered' else 'not_run_or_not_passed','grounded_values':values,'status':status,'answer_text':answer,'error_or_limitations':error,'latency_ms':round((time.perf_counter()-started)*1000,2)}
-  with self.log_path.open('a',encoding='utf-8') as f: f.write(json.dumps(record,ensure_ascii=False,default=str)+'\\n')
+  with self.log_path.open('a',encoding='utf-8') as f: f.write(json.dumps(record,ensure_ascii=False,default=str)+'\n')
   return record
 
 if __name__=='__main__':
