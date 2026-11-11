@@ -20,7 +20,8 @@ dmart-regional-director-assistant/
 │   ├── generate_data.py
 │   ├── clean_data.py
 │   ├── analyze.py
-│   └── run_acceptance.py
+│   ├── run_acceptance.py
+│   └── run_agent_tests.py
 ├── analysis/
 │   ├── data_quality_report.md
 │   ├── cleaning_log.csv
@@ -31,9 +32,15 @@ dmart-regional-director-assistant/
 │   ├── data_context.md
 │   ├── agent_spec.md
 │   └── release_gate.md             # Part D deliverable; to be added
-├── agent/                          # Part C conversational analytics agent
+├── agent/
+│   ├── __init__.py
+│   ├── understand.py
+│   ├── fetch.py
+│   ├── answer.py
+│   └── run_agent.py
 ├── tools/                          # Part D weather tool; to be added
-├── tests/                          # Part C regression tests; Part D weather tests
+├── tests/
+│   └── test_agent.py
 ├── outputs/                        # Part C smoke-test evidence
 ├── logs/                            # Part C JSONL audit log
 └── eval/                            # Part D evaluation; to be added
@@ -100,7 +107,7 @@ The extracted `agent/` package implements a deterministic, rule-based conversati
 Run from the repository root:
 
 ```bash
-python -m unittest discover -s tests -v
+python scripts/run_agent_tests.py
 python -m agent.run_agent
 ```
 
@@ -114,8 +121,8 @@ For reported averages, retain full precision during aggregation and round only t
 
 - The data is synthetic and covers 2026-04-01 through 2026-06-29; it must not be represented as actual DMart operational data.
 - The analysis is descriptive and observational. It cannot establish that stockouts, footfall, marketing or another factor caused revenue differences.
-- Part A is implemented and validated by a local acceptance script and GitHub Actions workflow. The conversational agent, weather integration, evaluation suite and release decision are specified by the assignment but are not yet implemented in this repository.
-- The Part B specification is a design document; it does not itself demonstrate a working agent.
+- Part A is implemented and validated by the local acceptance script and GitHub Actions workflow. Part C agent code and its 20-case acceptance test files are present; run `python scripts/run_agent_tests.py` from the repository root to execute those checks. Weather integration, the evaluation suite and the release decision remain for Part D.
+- The Part B specification is a design document; the working conversational agent is implemented separately in the `agent/` package.
 
 ## Prioritised Iteration-2 backlog
 
