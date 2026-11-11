@@ -118,8 +118,8 @@ def main():
                     "new_footfall": new,
                     "rule": "iqr_cap",
                     "details": (
-                        f"Two-sided IQR rule; {side} bound "
-                        f"{lower:.4f}, upper bound {upper:.4f}."
+                        f"Two-sided IQR rule; capped to {side} bound. "
+                        f"Lower bound {lower:.4f}; upper bound {upper:.4f}."
                     ),
                 })
 
