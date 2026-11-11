@@ -13,7 +13,7 @@ METRIC_FIELDS = {"revenue_inr","daily_target_inr","footfall","stockout_hours","d
 def audit_numeric_claims(answer, grounded_values, confidence):
     """Count numeric answer claims not supported by grounded values or fixed policy metadata."""
     import math
-    date_spans = [m.span() for m in re.finditer(r"\b\d{4}-\d{2}-\d{2}\\b", answer)]
+    date_spans = [m.span() for m in re.finditer(r"\b\d{4}-\d{2}-\d{2}\b", answer)]
     allowed = [0.70, 3.0]
     def collect(value):
         if isinstance(value, bool):
