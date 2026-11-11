@@ -35,7 +35,7 @@ jobs:
           python scripts/run_acceptance.py
 
       - name: Run agent and weather tests
-        run: python -m pytest -q
+        run: python -m pytest -q --junitxml=pytest-results.xml
 
       - name: Run golden-set evaluation
         run: python -m eval.run_eval
@@ -54,3 +54,4 @@ jobs:
             eval/eval_runs.jsonl
             eval/eval_summary.md
             docs/release_gate.md
+            pytest-results.xml
