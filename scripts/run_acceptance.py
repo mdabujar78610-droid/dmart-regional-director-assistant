@@ -8,6 +8,8 @@ errors = []
 
 
 def check(condition, message):
+    if isinstance(condition, pd.Series):
+        condition = condition.all()
     if not bool(condition):
         errors.append(message)
 
