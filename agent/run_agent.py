@@ -35,7 +35,7 @@ def audit_numeric_claims(answer, grounded_values, confidence=None):
 
     collect(grounded_values or {})
     claims = []
-    date_spans = [m.span() for m in re.finditer(r"\\b\\d{4}-\\d{2}-\\d{2}\\b", answer)]
+    date_pattern = r"\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{1,2}\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4}\\b"\n    date_spans = [m.span() for m in re.finditer(date_pattern, answer, re.I)]
     for match in re.finditer(r"(?<![A-Za-z])[-+]?\\d+(?:,\\d{3})*(?:\\.\\d+)?", answer):
         start, end = match.span()
         if any(left <= start < right for left, right in date_spans):
