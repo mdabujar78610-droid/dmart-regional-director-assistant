@@ -136,8 +136,10 @@ def understand(question, context=None):
     elif feedback: intent = "feedback"
     elif target and re.search(r"\b(hit|met|against|performance|perform)\b", low): intent = "target_vs_actual"
     elif comparison: intent = "comparison"
+    # Weather-only requests route to the weather adapter even when they name
+    # a store or date. Explicit business metrics still use the data lookup path.
+    elif weather_word and not metric: intent = "weather"
     elif metric or store or date_value or unresolved_date: intent = "lookup"
-    elif weather_word: intent = "weather"
     else: intent = "out_of_scope"
 
     if intent == "inventory" and not product:
@@ -179,7 +181,8 @@ def understand(question, context=None):
         if not store or named_store_unresolved: required.append("store")
     elif intent == "weather":
         if not store or named_store_unresolved: required.append("store")
-        if not date_value: required.append("date")
+        # Weather tool accepts one calendar date, not a date range.
+        if not isinstance(date_value, str): required.append("date")
 
     confidence = 1.0
     if intent in ("lookup", "target_vs_actual", "comparison", "feedback", "inventory", "weather"):
