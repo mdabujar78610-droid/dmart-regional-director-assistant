@@ -50,7 +50,7 @@ def main():
             "latency_ms": round(elapsed, 3),
             "tokens_est": len((row["question"] + " " + result["answer_text"]).split()),
             "tool_calls": result["tool_calls"],
-            "ungrounded_numbers": 0,
+            "ungrounded_numbers": result["ungrounded_numbers"],
             "budget_exceeded": len((row["question"] + " " + result["answer_text"]).split()) > 150,
             "passed": bool(status_match and intent_match and contains_match),
         })
