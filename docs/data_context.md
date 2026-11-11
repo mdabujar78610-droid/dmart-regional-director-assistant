@@ -1,16 +1,10 @@
 # DMart Regional Director Assistant — Data Context
 
-## 1. Project Overview
+## 1. Provenance, stores, and reporting period
 
-This document describes the datasets used by the DMart Regional Director Assistant.
+All CSV files are synthetic assignment data, not actual DMart operational records.
 
-The AI Agent will analyze three prepared datasets to help Kavita Rao, Regional Director, understand store performance, inventory conditions, and customer feedback.
-
-The datasets are synthetic assignment data and must not be presented as actual DMart business records.
-
-### Stores Covered
-
-| Store ID | Store Name |
+| Store ID | Store |
 |---|---|
 | S01 | Mumbai |
 | S02 | Pune |
@@ -18,229 +12,133 @@ The datasets are synthetic assignment data and must not be presented as actual D
 | S04 | Bengaluru |
 | S05 | Ahmedabad |
 
-### Reporting Period
+Daily reporting period: **2026-04-01 through 2026-06-29** (90 calendar days). Inventory is an undated snapshot.
 
-1 April 2026 to 29 June 2026.
+## 2. Dataset inventory
 
-## 2. Dataset Overview
+| File | Rows | Columns | Grain |
+|---|---:|---:|---|
+| data/store_daily.csv (raw) | 453 | 9 | Store-day, includes 3 injected exact duplicates |
+| data/store_daily_clean.csv | 450 | 15 | Unique store-day plus six derived analysis columns |
+| data/inventory.csv | 40 | 6 | Store-product snapshot |
+| data/feedback.csv | 200 | 6 | Individual feedback record |
 
-The project uses three datasets:
+## 3. Actual column schemas and semantic data types
 
-| Dataset | Rows | Purpose |
-|---|---:|---|
-| store_daily_clean.csv | 450 | Daily store performance |
-| inventory.csv | 40 | Product stock and reorder information |
-| feedback.csv | 200 | Customer ratings and feedback themes |
+Types below describe the CSV values and their intended pandas-compatible representation. CSV has no native type system; date columns are ISO-8601 strings on disk and should be parsed as dates for filtering.
 
-### 2.1 store_daily_clean.csv
+### 3.1 data/store_daily.csv — raw daily source (453 × 9)
 
-**Purpose:** Analyze daily store performance.
-
-Expected columns:
-
-| Column | Data Type | Description |
+| Column | Semantic type | Description |
 |---|---|---|
-| store | String | Store name |
-| store_id | String | Store identifier |
-| date | Date | Business date |
-| revenue_inr | Numeric | Daily revenue in INR |
-| daily_target_inr | Numeric | Daily revenue target |
-| footfall | Numeric | Number of visitors |
-| stockout_hours | Numeric | Stockout duration in hours |
-| discount_pct | Numeric | Discount percentage |
-| achievement_pct | Numeric | Target achievement percentage |
-| performance_band | Category | Performance classification |
+| date | date (ISO-8601 string in CSV) | Business date |
+| store_id | string identifier | Store code |
+| store | string/category | Store name |
+| footfall | integer or missing | Visitor count; contains injected invalid/missing/extreme values |
+| revenue_inr | float | Daily revenue in INR |
+| daily_target_inr | integer | Daily target in INR |
+| marketing_spend_inr | integer | Synthetic field retained in source; prohibited for agent use |
+| stockout_hours | float | Daily stockout duration |
+| discount_pct | float | Discount percentage |
 
-**Prepared row count:** 450
+Raw quality facts: 453 rows, 9 columns; 3 exact duplicate records; 4 blank footfall cells; one negative footfall value (-150); injected extreme high footfall values 6,100 and 9,800. Do not edit the raw file during cleaning.
 
-**Date range:** 2026-04-01 to 2026-06-29.
+### 3.2 data/store_daily_clean.csv — cleaned daily data (450 × 15)
 
-Supported analysis:
-- Revenue analysis.
-- Daily target achievement.
-- Store comparisons.
-- Footfall analysis.
-- Discount analysis.
-- Performance trends.
-- Pune performance diagnosis.
-
-### 2.2 inventory.csv
-
-**Purpose:** Analyze inventory and stock availability.
-
-Expected columns:
-
-| Column | Data Type | Description |
+| Column | Semantic type | Description |
 |---|---|---|
-| store | String | Store name |
-| store_id | String | Store identifier |
-| product | String | Product name |
-| product_id | String | Product identifier |
-| stock_units | Numeric | Available stock |
-| reorder_threshold | Numeric | Minimum reorder level |
+| date | date (ISO-8601 string in CSV) | Business date |
+| store_id | string identifier | Store code |
+| store | string/category | Store name |
+| footfall | float/integer-valued | Cleaned visitor count; store-median imputation and IQR capping may produce fractional values |
+| revenue_inr | float | Daily revenue in INR |
+| daily_target_inr | integer | Daily target in INR |
+| marketing_spend_inr | integer | Retained from source for reproducibility; prohibited for agent use |
+| stockout_hours | float | Daily stockout duration |
+| discount_pct | float | Discount percentage |
+| revenue_per_footfall | float | Part A analysis-only ratio; not an approved agent metric |
+| marketing_efficiency | float | Part A-only derived field that depends on prohibited marketing spend; agent must never use or report it |
+| achievement_pct | float | Revenue divided by daily target × 100 |
+| shortfall_inr | float | Daily target minus revenue; Part A analysis-only |
+| weekend_flag | category/string | Yes for Saturday/Sunday, otherwise No; Part A analysis-only |
+| performance_band | category/string | Excellent (achievement ≥100%), Good (≥75% and <100%), Poor (<75%) |
 
-**Prepared row count:** 40.
+### 3.3 data/inventory.csv — inventory snapshot (40 × 6)
 
-Important:
-- This dataset has no confirmed date column.
-- Treat it as an undated inventory snapshot.
-- Do not use it to claim historical stock levels.
-
-Supported analysis:
-- Products below reorder threshold.
-- Store-wise stock comparison.
-- Products requiring stock review.
-- Inventory risk identification.
-
-### 2.3 feedback.csv
-
-**Purpose:** Analyze customer feedback and satisfaction.
-
-Expected columns:
-
-| Column | Data Type | Description |
+| Column | Semantic type | Description |
 |---|---|---|
-| store | String | Store name |
-| store_id | String | Store identifier |
-| date | Date | Feedback date, if present |
-| product | String | Product name, if present |
-| product_id | String | Product identifier, if present |
-| rating | Numeric | Customer rating |
-| theme | Category | Feedback theme |
+| store_id | string identifier | Store code |
+| store | string/category | Store name |
+| product_id | string identifier | Product code |
+| product | string/category | Product name |
+| stock_units | integer | Available stock units |
+| reorder_threshold | integer | Reorder threshold in units |
 
-**Prepared row count:** 200.
+This dataset has no date column. Never describe it as historical or join it to a daily period as though it were time-aligned.
 
-**Expected reporting period:** 2026-04-01 to 2026-06-29, where date information is available.
+### 3.4 data/feedback.csv — customer feedback (200 × 6)
 
-Supported analysis:
-- Customer rating summaries.
-- Common feedback themes.
-- Store-wise customer feedback.
-- Customer satisfaction comparisons.
+| Column | Semantic type | Description |
+|---|---|---|
+| feedback_id | string identifier | Feedback record code |
+| store_id | string identifier | Store code |
+| store | string/category | Store name |
+| date | date (ISO-8601 string in CSV) | Feedback date within the quarter |
+| rating | integer or missing | Customer rating; 12 missing values are retained |
+| theme | category/string | Feedback theme |
 
-## 3. Data Cleaning Summary (Part A)
+Feedback rows represent individual records. Rating averages must use non-missing ratings and disclose rated/total counts.
 
-The following cleaning operations were reported in Part A:
+## 4. Approved metric set and dimensions
 
-1. Removed 3 duplicate daily records.
-2. Handled 5 missing footfall values through imputation.
-3. Capped 2 extreme values.
-4. Treated negative footfall values as missing before cleaning.
-5. Prepared the three datasets for analysis.
+Exactly 11 approved reportable fields:
+1. `revenue_inr`
+2. `daily_target_inr`
+3. `footfall`
+4. `stockout_hours`
+5. `discount_pct`
+6. `achievement_pct`
+7. `performance_band`
+8. `stock_units`
+9. `reorder_threshold`
+10. `rating`
+11. `theme`
 
-### Data Quality Rules
+Allowed dimensions/identifiers: `store`, `store_id`, `date`, `product`, `product_id`, and `feedback_id` (feedback identifier only). These may filter, group, or label but are not additional metrics.
 
-The Agent must:
+**Prohibited:** `marketing_spend_inr` and dependent `marketing_efficiency`. They must not be used by the agent, even though the fields exist in the Part A files. Part A may document the source schema and derived column for transparency, but must not include those values in the conversational analytics path.
 
-- Never treat missing values as zero.
-- Identify imputed values when relevant.
-- Disclose capped or adjusted values when they affect an answer.
-- Check actual CSV files before analysis.
-- Validate missing values, duplicate records, and data types.
-- Never invent missing business information.
+## 5. Cleaning record and data-quality rules
 
-The cleaning summary does not guarantee that every column in every dataset is complete.
+Part A cleaning must:
+- Remove three exact duplicate store-day rows, retaining the first copy.
+- Convert the single negative footfall value to missing before outlier treatment.
+- Apply store-specific two-sided IQR bounds: lower = Q1 − 1.5×IQR; upper = Q3 + 1.5×IQR. Cap values below the lower bound to the lower bound and above the upper bound to the upper bound; log every change.
+- Impute missing daily footfall with that store's median and log each imputation.
+- Preserve the 12 missing feedback ratings; do not impute them.
+- Keep raw source files unchanged.
 
-## 4. Dataset Relationships
+Expected daily cleaning counts from the current synthetic generator: 453 raw rows → 450 cleaned rows; 3 duplicates removed; 4 blank footfall values plus 1 negative footfall treated as missing; 5 total store-median imputations. Two high footfall values are known injected outliers; verify whether either lower-bound outliers exist from the data rather than assuming the count.
 
-The datasets can be connected through store identifiers when their mappings are verified.
+## 6. Verified business findings to regenerate
 
-Dataset grain:
+The current assignment findings to test against the actual cleaned CSV are:
+- Pune has the lowest mean daily revenue.
+- Hyderabad has the highest mean stockout hours.
+- Pune does not have the highest mean stockout hours.
 
-- store_daily_clean.csv: Store and date.
-- inventory.csv: Store and product.
-- feedback.csv: Individual feedback record.
+The previous analysis reported Pune mean daily revenue INR 636,358.55, Pune mean stockout hours 2.32, and Hyderabad mean stockout hours 3.85. Treat these as prior values to reconcile against regenerated outputs, not hard-coded truths. Never claim stockouts caused Pune's lower revenue.
 
-### Join Rules
+## 7. Relationships and safe joins
 
-Before joining datasets, the Agent must:
+- Daily grain: store + date.
+- Inventory grain: store + product.
+- Feedback grain: feedback_id / individual feedback record.
+- Validate store identifiers and row counts before joining.
+- Aggregate to compatible grains before joining.
+- Prevent many-to-many row multiplication.
+- Analyze datasets separately when a safe join cannot be demonstrated.
 
-1. Verify the store identifiers.
-2. Check the grain of each dataset.
-3. Avoid duplicate rows caused by many-to-many joins.
-4. Aggregate data to compatible levels where necessary.
-5. Validate row counts and metric totals after joining.
+## 8. Analysis rules
 
-If a safe join is not possible, analyze datasets separately.
-
-## 5. Approved Metrics
-
-The Agent is allowed to report and calculate using only these 11 approved metric fields:
-
-1. revenue_inr
-2. daily_target_inr
-3. footfall
-4. stockout_hours
-5. discount_pct
-6. achievement_pct
-7. performance_band
-8. stock_units
-9. reorder_threshold
-10. rating
-11. theme
-
-### Dimension and Identifier Fields
-
-These fields may be used for filtering, grouping, and identification:
-
-- store
-- store_id
-- date
-- product
-- product_id
-
-They are not additional reportable metrics.
-
-### Prohibited Metric
-
-`marketing_spend_inr`
-
-The Agent must never query, calculate, estimate, or report this field.
-
-## 6. Data Analysis Rules
-
-1. Use the full available date range when the user does not specify a period.
-2. Apply consistent filters when comparing stores.
-3. Clearly distinguish totals, averages, counts, and percentages.
-4. Do not divide by zero.
-5. Do not silently remove relevant missing records.
-6. Do not invent historical inventory information.
-7. Use only columns actually present in the selected CSV file.
-8. Validate data before calculations.
-
-## 7. Pune Store Diagnosis
-
-Pune is identified in the assignment as having the lowest average daily revenue among the five stores.
-
-The Agent should investigate this using available evidence from:
-
-- Revenue.
-- Daily targets.
-- Footfall.
-- Stockout hours.
-- Discounts.
-- Inventory.
-- Customer ratings.
-- Feedback themes.
-
-The Agent must distinguish:
-
-- Observed facts.
-- Calculated results.
-- Possible explanations.
-- Unsupported conclusions.
-
-For example, low inventory and low revenue occurring together do not automatically prove that inventory caused the revenue decline.
-
-## 8. Open-Ended Conversational Analytics
-
-The Agent must support natural-language questions rather than a fixed list of questions.
-
-Users may ask new questions about the five stores, datasets, approved metrics, and business performance.
-
-The Agent should understand different phrasings, follow-up questions, comparisons, and diagnostic requests.
-
-However, all answers must remain within the approved datasets and metric restrictions.
-
-If information is unavailable, the Agent must explain the limitation rather than inventing an answer.
-
+Use the full available period when no daily date filter is specified. Clearly label totals, means, medians, counts, percentages, and denominators. Use non-missing ratings for rating averages and disclose rated/total counts. Do not impute missing ratings. Never treat inventory as dated. Do not claim correlation proves causation. Disclose data cleaning adjustments when relevant.
