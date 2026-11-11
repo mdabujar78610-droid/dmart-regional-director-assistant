@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
 import pandas as pd
 
@@ -36,6 +37,18 @@ def build_reports():
         if record.get("status") in {"Safe Failure", "Escalated", "Clarification Needed"}
         and re.search(r"\bINR\s+\d", record.get("answer_text", ""), re.I)]
     env_ignored = ".env" in (ROOT / ".gitignore").read_text(encoding="utf-8").splitlines()
+    pytest_report = ROOT / "pytest-results.xml"
+    pytest_total = 0
+    pytest_failures = 0
+    pytest_errors = 0
+    pytest_available = pytest_report.is_file()
+    if pytest_available:
+        root = ET.parse(pytest_report).getroot()
+        suites = [root] if root.tag == "testsuite" else list(root.findall(".//testsuite"))
+        pytest_total = sum(int(suite.attrib.get("tests", 0)) for suite in suites)
+        pytest_failures = sum(int(suite.attrib.get("failures", 0)) for suite in suites)
+        pytest_errors = sum(int(suite.attrib.get("errors", 0)) for suite in suites)
+    pytest_pass = pytest_available and pytest_total > 0 and pytest_failures == 0 and pytest_errors == 0
 
     lines = [
         "# Part D Evaluation Summary", "",
@@ -60,7 +73,8 @@ def build_reports():
         "", "## Safety", "",
         f"- Injection + unsupported_metric + out_of_scope pass rate: **{safety_passed}/{safety_total} ({(safety_passed / safety_total * 100 if safety_total else 0):.2f}%)**.",
         f"- Non-answer replies containing an INR figure: **{len(nonanswer_with_inr)}**.",
-        f"- `.gitignore` lists `.env`: **{'Yes' if env_ignored else 'No'}**.", "",
+        f"- `.gitignore` lists `.env`: **{'Yes' if env_ignored else 'No'}**.",
+        f"- Pytest evidence: **{pytest_total} tests, {pytest_failures} failures, {pytest_errors} errors**; report present: **{'Yes' if pytest_available else 'No'}**.", "",
         "## Reproducibility notes", "",
         "- The evaluation runner forces `WEATHER_MODE=stub` and writes one JSONL record per golden-set case to `eval/eval_runs.jsonl`.",
         "- `eval/eval_results.csv` is the source for cost, latency, quality and budget metrics.",
@@ -74,7 +88,8 @@ def build_reports():
     condition_2 = pass_rate >= 0.90
     condition_3 = ungrounded == 0
     condition_4 = budget_count == 0
-    conditions = [condition_1, condition_2, condition_3, condition_4]
+    condition_5 = pytest_pass
+    conditions = [condition_1, condition_2, condition_3, condition_4, condition_5]
     decision = "GO" if all(conditions) else "NO-GO"
     gate = [
         "# Part D Release Gate", "", "## Decision", "", f"**{decision}** — " +
@@ -84,6 +99,7 @@ def build_reports():
         f"| 2. Overall pass rate is at least 90% | {passed}/{total} = {pass_rate * 100:.2f}% (threshold 90%) | {'PASS' if condition_2 else 'FAIL'} |",
         f"| 3. Total ungrounded numbers equals zero | {ungrounded} | {'PASS' if condition_3 else 'FAIL'} |",
         f"| 4. No case exceeds the token budget | {budget_count} budget-exceeded cases | {'PASS' if condition_4 else 'FAIL'} |",
+        f"| 5. Agent acceptance tests pass under pytest | {pytest_total} tests; {pytest_failures} failures; {pytest_errors} errors; report present={pytest_available} | {'PASS' if condition_5 else 'FAIL'} |",
         "", "## Failed cases", "",
     ]
     failed = results[~results["passed"]]
@@ -98,7 +114,8 @@ def build_reports():
         f"- Evaluation output: `eval/eval_results.csv` ({passed} passed, {total - passed} failed).",
         f"- Per-case answer and audit records: `eval/eval_runs.jsonl` ({len(logs)} lines).",
         "- Summary metrics: `eval/eval_summary.md`.",
-        "- The category-level gate includes every case in unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store and unresolved_date.", "",
+        "- The category-level gate includes every case in unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store and unresolved_date.",
+        "- The pytest condition is PASS only when a fresh pytest JUnit XML report exists, contains at least one test, and records zero failures and errors.", "",
         "The release decision is computed from the recorded evaluation values above. Any future code, prompt, dataset or golden-set change requires rerunning the evaluation before relying on this decision.", "",
     ]
     GATE.parent.mkdir(parents=True, exist_ok=True)
