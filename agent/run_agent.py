@@ -10,6 +10,40 @@ from .answer import answer_result, money, round2
 TABLE = "store_daily_clean"
 METRIC_FIELDS = {"revenue_inr","daily_target_inr","footfall","stockout_hours","discount_pct","achievement_pct","performance_band"}
 
+def audit_numeric_claims(answer, grounded_values, confidence):
+    """Count numeric answer claims not supported by grounded values or fixed policy metadata."""
+    import math
+    date_spans = [m.span() for m in re.finditer(r"\\b\\d{4}-\\d{2}-\\d{2}\\b", answer)]
+    allowed = [0.70, 3.0]
+    def collect(value):
+        if isinstance(value, bool):
+            return
+        if isinstance(value, (int, float)):
+            if math.isfinite(float(value)):
+                allowed.append(float(value))
+        elif isinstance(value, dict):
+            for nested in value.values():
+                collect(nested)
+        elif isinstance(value, (list, tuple)):
+            for nested in value:
+                collect(nested)
+    collect(grounded_values or {})
+    if confidence is not None:
+        allowed.append(float(confidence))
+    claims = []
+    for match in re.finditer(r"(?<![A-Za-z])[-+]?\\d+(?:,\\d{3})*(?:\\.\\d+)?", answer):
+        if any(start <= match.start() < end for start, end in date_spans):
+            continue
+        raw = match.group(0).replace(",", "")
+        try:
+            value = float(raw)
+        except ValueError:
+            continue
+        if not any(abs(value - candidate) <= max(0.011, abs(candidate) * 1e-9) for candidate in allowed):
+            claims.append(raw)
+    return len(claims), claims
+
+
 class Agent:
     def __init__(self, data_dir="data", log_path=None):
         self.con = connect(data_dir)
@@ -227,8 +261,8 @@ class Agent:
         elapsed = (time.perf_counter()-started)*1000
         answer = result["answer_text"]
         tokens = len((question + " " + answer).split())
-        # Numeric grounding audit is intentionally conservative: all figures in the answer
-        # originate from fetched data or fixed date/range metadata.
+        ungrounded_count, ungrounded_claims = audit_numeric_claims(
+            answer, result["grounded_values"], p.get("confidence"))
         log = {
             "run_id":str(uuid.uuid4()), "user_id":user_id, "session_id":session_id,
             "timestamp":datetime.now(timezone.utc).isoformat(), "question":question,
@@ -237,7 +271,8 @@ class Agent:
             "tools_called":self._tools_called[:], "status":result["status"], "answer_text":answer,
             "evidence":result["evidence"], "grounded_values":result["grounded_values"],
             "latency_ms":round(elapsed,3), "tokens_est":tokens, "tool_calls":self._tool_calls,
-            "ungrounded_numbers":0, "budget_exceeded":tokens>150,
+            "ungrounded_numbers":ungrounded_count, "ungrounded_claims":ungrounded_claims,
+            "budget_exceeded":tokens>150,
         }
         # Resolve the environment override for every invocation, not only at construction.
         active_log_path = Path(os.getenv("AGENT_LOG_PATH", str(self.log_path)))
@@ -247,4 +282,5 @@ class Agent:
         return {"final_status":result["status"],"status":result["status"],"intent":p["intent"],
                 "confidence":p["confidence"],"answer_text":answer,"grounded_values":result["grounded_values"],
                 "evidence":result["evidence"],"attempts":log["attempts"],"individual_query_attempts":self._attempts[:],
-                "route":self._route,"tool_calls":self._tool_calls}
+                "route":self._route,"tool_calls":self._tool_calls,
+                "ungrounded_numbers":ungrounded_count,"ungrounded_claims":ungrounded_claims}
