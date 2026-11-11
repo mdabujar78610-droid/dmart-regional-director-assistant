@@ -1,233 +1,139 @@
-# DMart Regional Director Assistant --- Requirements
+# DMart Regional Director Assistant — Requirements
 
-## 1. Project purpose
+## 1. Project purpose and data provenance
 
-Build a grounded conversational analytics assistant for Kavita Rao,
-Regional Director, to help diagnose store performance across five DMart
-stores during the quarter covered by the cleaned datasets.
+Build an open-ended, read-only, grounded conversational analytics assistant for Kavita Rao, Regional Director, across five synthetic DMart practice stores. The assistant must understand varied natural-language questions but answer only within the approved datasets, fields, calculations, and safety rules.
 
-The assistant must answer business questions using only the approved
-fields and the supplied cleaned data. It must explain what the data
-supports, identify when evidence is insufficient, and never invent
-figures or causes.
+All supplied datasets are synthetic assignment data. They are not actual DMart or Avenue Supermarts operational records.
 
-The assistant is **open-ended in how users may ask questions**, but
-**bounded in what it may answer**. It must not be restricted to a fixed
-list of example questions. Instead, it should interpret new
-natural-language questions, determine whether they fall within the
-approved business scope, and answer them only when the available data
-and rules support an answer.
+## 2. Stakeholder and stores
 
-## 2. Stakeholder
+- Primary user: Kavita Rao, Regional Director.
+- Business scenario: DMart regional operations.
+- Stores: Mumbai (S01), Pune (S02), Hyderabad (S03), Bengaluru (S04), Ahmedabad (S05).
 
--   **Primary user / owner:** Kavita Rao
--   **Role:** Regional Director
--   **Business:** DMart (Avenue Supermarts)
--   **Stores in scope:**
-    -   Mumbai (`S01`)
-    -   Pune (`S02`)
-    -   Hyderabad (`S03`)
-    -   Bengaluru (`S04`)
-    -   Ahmedabad (`S05`)
+## 3. Approved datasets and grain
 
-## 3. Scope
+| Dataset | Expected rows | Grain | Date coverage |
+|---|---:|---|---|
+| data/store_daily_clean.csv | 450 | One store per calendar day | 2026-04-01 through 2026-06-29 |
+| data/inventory.csv | 40 | One store-product snapshot | Undated snapshot |
+| data/feedback.csv | 200 | One feedback record | Dates fall within the reporting quarter |
 
-### In scope
+Raw source data is data/store_daily.csv (453 rows before cleaning). Do not modify raw source CSVs. The generator may recreate them deterministically only when explicitly running the documented data-generation workflow.
 
-The assistant may:
+## 4. Exactly 11 approved reportable metrics/fields
 
-1.  Answer natural-language questions about store performance using the
-    approved metrics.
-2.  Accept **open-ended questions** related to the five stores and the
-    three approved datasets; it must not require users to phrase
-    questions exactly as a predefined example.
-3.  Understand different phrasings of the same analytical request and
-    identify the intended metric, store, product, date range,
-    comparison, and filters.
-4.  Compare stores, products, and dates when the requested data and
-    valid comparison basis are available.
-5.  Compare actual revenue with daily targets and explain target
-    achievement.
-6.  Summarize inventory levels and flag stock below reorder thresholds.
-7.  Summarize customer feedback themes and ratings.
-8.  Investigate possible contributors to Pune's low average daily
-    revenue using available evidence, without assuming that stockouts
-    caused the shortfall.
-9.  Answer relevant follow-up questions using the conversation context,
-    while checking that inherited filters and assumptions remain
-    appropriate.
-10. Explain data limitations, missing values, filters, definitions, and
-    calculation methods.
-11. Ask a focused clarifying question when the store, date range,
-    metric, product, comparison basis, or wording is ambiguous and the
-    ambiguity could change the result.
-12. Explain when a question is outside the approved scope, when required
-    data is unavailable, or when the evidence is insufficient.
-13. Provide concise summaries and transparent calculations whose numeric
-    claims can be traced to approved data fields.
+The agent may report or calculate using only these 11 approved metric fields:
 
-### Open-ended question examples (illustrative, not exhaustive)
+| # | Field | Dataset | Meaning |
+|---:|---|---|---|
+| 1 | revenue_inr | store_daily_clean.csv | Daily store revenue in INR |
+| 2 | daily_target_inr | store_daily_clean.csv | Daily revenue target in INR |
+| 3 | footfall | store_daily_clean.csv | Daily visitor count |
+| 4 | stockout_hours | store_daily_clean.csv | Recorded daily stockout duration in hours |
+| 5 | discount_pct | store_daily_clean.csv | Recorded discount percentage |
+| 6 | achievement_pct | store_daily_clean.csv | Revenue target achievement percentage |
+| 7 | performance_band | store_daily_clean.csv | Performance classification |
+| 8 | stock_units | inventory.csv | Available stock units in the inventory snapshot |
+| 9 | reorder_threshold | inventory.csv | Reorder threshold in units |
+| 10 | rating | feedback.csv | Customer rating; missing ratings remain missing |
+| 11 | theme | feedback.csv | Customer feedback theme/category |
 
-The following examples demonstrate the kinds of questions the assistant
-may handle. They are **not a fixed question list or a limit** on the
-user's wording.
+No additional field is an approved reportable metric. Identifiers and dimensions may only identify, filter, group, sort, or label records.
 
-**Store performance and revenue** - Which store had the lowest average
-daily revenue in the selected period? - Which store generated the
-highest revenue? - How did Pune perform against its daily revenue
-target? - Compare the five stores for the selected date range. - What
-changed in store performance from April to June 2026?
+**Explicit exclusion:** `marketing_spend_inr` is present in the raw and cleaned daily CSV for the assignment's data-generation/cleaning exercise. It is prohibited from all agent queries, calculations, summaries, grounded values, and responses. Do not use `marketing_efficiency` because it depends on the prohibited field. Never reveal, estimate, infer, or calculate marketing spend or marketing efficiency.
 
-**Footfall and target achievement** - Which store had the highest
-footfall? - Did a selected store meet its daily target on a particular
-date? - How does footfall compare with revenue across stores? - Which
-dates had the lowest target achievement for Pune?
+Other Part A derived columns (`revenue_per_footfall`, `shortfall_inr`, `weekend_flag`) are analysis-only and are not among the 11 approved agent metrics. The agent must use the approved source fields and documented formulas only.
 
-**Inventory and stock availability** - Which products have stock below
-their reorder threshold? - Which store-product records show the greatest
-stockout hours? - Where should the Regional Director review stock
-availability first? - Is the available inventory evidence consistent
-with the concern about Pune?
+## 5. Allowed dimensions, identifiers, and filters
 
-**Customer feedback** - What customer feedback themes appear most
-often? - Which store has the lowest average customer rating, where
-ratings are available? - What are customers saying about a selected
-store or theme?
+Allowed dimensions/identifiers:
+- `store`, `store_id`
+- `date` (daily and feedback datasets only)
+- `product`, `product_id` (inventory and feedback where present)
+- `feedback_id` (feedback record identifier only)
 
-**Diagnosis and decision support** - What evidence may help explain
-Pune's lower revenue? - Do the available records support the theory that
-stockouts contributed to Pune's performance? - What operational signals
-deserve further human investigation? - Is there enough data to support
-this conclusion?
+Allowed store values are the five stores listed in Section 2. Allowed date filters must fall within 2026-04-01 to 2026-06-29. Date filters may be a single date or an inclusive range. Inventory has no date field and must always be described as an undated snapshot. Product filters must match available product records. Apply identical date/store filters when comparing like-for-like daily records. Do not treat identifiers as metrics.
 
-The assistant should also handle equivalent questions phrased in
-unfamiliar ways, provided their intent remains within the approved scope
-and can be answered from the permitted data.
+## 6. Scope
 
-### Out of scope
+The assistant may answer supported store-performance, target-vs-actual, footfall, stockout, discount, performance-band, inventory-threshold, customer-rating, feedback-theme, comparison, and evidence-based diagnostic questions. It may summarize records and suggest human review, but it cannot execute business operations.
 
-The assistant must not:
+Examples it should answer when the required data and filters are present:
+- “Which store had the lowest mean daily revenue during the reporting period?”
+- “Compare Pune and Mumbai revenue for May 2026.”
+- “Did Pune meet its daily target on 2026-05-16?”
+- “Which stores have Amul Milk below reorder threshold?”
+- “What feedback themes were most common in Hyderabad?”
 
-1.  Make or execute purchases, transfers, replenishment orders, refunds,
-    or other operational transactions.
-2.  Change prices, discounts, targets, inventory records, or source
-    datasets.
-3.  Send messages, contact store staff, or create tasks/tickets on
-    behalf of the user.
-4.  Claim a cause or business outcome that is not supported by the
-    available data.
-5.  Report unapproved metrics, including `marketing_spend_inr`.
-6.  Present external information as if it came from the supplied
-    datasets.
-7.  Expose personal/customer-identifying information or infer
-    identities.
-8.  Treat a correlation or co-occurrence as proof of causation.
-9.  Invent data, fill missing business facts with guesses, or present
-    estimates as observed values.
-10. Answer unrelated questions as though they were part of the DMart
-    store analytics role.
+Examples it must refuse or safely limit:
+- “What was Pune’s marketing spend?” — prohibited field; do not query.
+- “Calculate marketing efficiency.” — depends on prohibited marketing spend.
+- “Order 500 units for Pune.” — operational action not permitted.
+- “Who submitted this customer rating?” — identifying information is unavailable and prohibited.
+- “Prove stockouts caused Pune’s lower revenue.” — causal claim is not established by observational data.
+- “Give revenue for July 2026.” — outside the supplied date range.
 
-## 4. Approved data fields
+## 7. Verified Part A findings
 
-The assistant may report or calculate using only these 11 approved
-metric fields:
+The cleaned daily dataset has 450 store-days. Re-generated analysis must verify these findings from the current committed CSVs before publication:
+1. Pune has the lowest mean daily revenue among the five stores.
+2. Hyderabad has the highest mean stockout hours.
+3. Pune does not have the highest mean stockout hours.
 
-  -----------------------------------------------------------------------
-  Approved field                      Meaning / permitted use
-  ----------------------------------- -----------------------------------
-  `revenue_inr`                       Revenue in Indian rupees
+Do not claim that stockouts caused Pune's lower revenue. Report associations as associations, identify limitations, and do not infer causation.
 
-  `daily_target_inr`                  Daily revenue target in Indian
-                                      rupees
+## 8. Data quality and calculation rules
 
-  `footfall`                          Store footfall count
+- Preserve all raw CSV files unchanged during cleaning and analysis.
+- Remove exact duplicate daily records while retaining the first occurrence and log each removed row.
+- Convert negative footfall to missing, not zero.
+- Apply the two-sided store-specific IQR rule: values below Q1 − 1.5×IQR and above Q3 + 1.5×IQR are outliers. Apply the documented cap treatment to either bound and log every changed record.
+- Impute missing daily footfall using the median for the same store; log each imputation.
+- Do not silently convert missing values to zero.
+- Preserve missing customer ratings; do not impute them.
+- Verify derived columns and disclose adjusted values where material.
+- State aggregation, denominator, period, filters, and source dataset for numerical claims.
+- Avoid division by zero and invalid/many-to-many joins.
 
-  `stockout_hours`                    Hours an item/store was out of
-                                      stock, as represented in the data
+## 9. Agent requirements
 
-  `discount_pct`                      Discount percentage
+The agent must implement nine intents: `lookup`, `target_vs_actual`, `comparison`, `inventory`, `feedback`, `weather`, `unsupported_metric`, `out_of_scope`, and `diagnostic`.
 
-  `achievement_pct`                   Target achievement percentage
+It must use a deterministic confidence threshold of **0.70**. Below 0.70, or when a material required entity is missing/ambiguous, ask one focused clarification question before querying.
 
-  `performance_band`                  Supplied performance category/band
+The agent must use exactly one final response status per request:
+1. **Answered** — validated data retrieval/calculation is grounded.
+2. **Drafted** — evidence-based draft/recommendation for human review; no action executed.
+3. **Clarification Needed** — confidence below 0.70 or required information is missing/ambiguous.
+4. **Escalated** — recoverable technical failure remains after retries or authorized human decision is required.
+5. **Safe Failure** — prohibited, unsupported, out-of-scope, out-of-range, or unreliable request.
 
-  `stock_units`                       Available stock quantity in units
+Maximum query attempts: **3 total** (initial attempt plus at most two retries). Retry only recoverable technical errors. Never retry prohibited metrics, invalid schemas, ambiguity, or unsupported requests.
 
-  `reorder_threshold`                 Stock level at which replenishment
-                                      should be considered
+The required eight-stage pipeline is:
+1. **Interpret** — identify intent, metric, store/product, date, filters, and comparison.
+2. **Route** — dispatch to the appropriate supported handler.
+3. **Validate** — verify approved metric, dataset, schema, entity, date, types, and data sufficiency.
+4. **Query** — retrieve only required approved records using safe parameterized operations.
+5. **Calculate** — calculate with explicit formula, aggregation, and denominator.
+6. **Synthesize** — answer clearly and concisely with limitations.
+7. **Ground** — verify every numeric claim against returned source evidence.
+8. **Record** — append an auditable JSONL record with intent, confidence, source, fields, filters, attempts, validation, status, and limitations.
 
-  `rating`                            Customer rating value
+## 10. Prohibited actions
 
-  `theme`                             Customer feedback theme/category
-  -----------------------------------------------------------------------
+The agent must never:
+1. Query, calculate, or report `marketing_spend_inr` or dependent marketing efficiency.
+2. Change prices, discounts, targets, or store records.
+3. Transfer, order, purchase, or replenish inventory.
+4. Modify raw or cleaned source datasets.
+5. Execute purchases, refunds, payments, or other transactions.
+6. Contact employees or customers or send messages on the user's behalf.
+7. expose customer-identifying or confidential personal information.
+8. Invent data, fabricate evidence, or claim causation from correlation.
 
-The following fields are identifiers or dimensions only. They may be
-used to filter, group, or label results, but must not be presented as
-performance metrics:
+## 11. Acceptance and release
 
--   `store`
--   `store_id`
--   `date`
--   `product`
--   `product_id`
-
-**Explicit exclusion:** `marketing_spend_inr` is not an approved metric.
-Do not query, calculate, summarize, estimate, or report it. If asked for
-it, explain that it is outside the approved metric set.
-
-## 5. Supported business questions and open-ended handling
-
-The examples in Section 3 are illustrative. The assistant must not use
-them as a hard-coded allowlist of exact question strings.
-
-For every new request, the assistant should:
-
-1.  Interpret the natural-language request and identify its business
-    intent.
-2.  Determine whether the intent is within the DMart store analytics
-    scope.
-3.  Map the request to approved metrics, dimensions, datasets, and valid
-    filters.
-4.  Check whether the required fields and records are available.
-5.  Ask for clarification if a material detail is ambiguous.
-6.  Answer with a traceable calculation when the request is supported.
-7.  State clearly when the request is unsupported, prohibited, or cannot
-    be answered from the available data.
-
-The assistant must not treat "open-ended" as permission to answer every
-possible question. Its freedom is in understanding varied questions; its
-answers remain limited by the approved datasets, metric rules, and
-safety restrictions.
-
-The assistant must state the selected date range, store scope,
-aggregation, and relevant filters when they materially affect the
-answer.
-
-## 6. Questions requiring refusal or limitation
-
-The assistant must refuse or safely redirect requests to:
-
--   Report `marketing_spend_inr` or any other unapproved metric.
--   Execute inventory, pricing, discount, payment, or staffing actions.
--   Reveal personal or confidential customer information.
--   Predict or guarantee future revenue without an approved forecasting
-    method and adequate data.
--   Assert a causal explanation when the data only shows association.
--   Answer questions unrelated to the store datasets and the assistant's
-    defined business role.
--   Provide a result when required data is missing, invalid, or
-    insufficient to support it.
-
-When a request is partly supported, answer the supported part and
-clearly identify the unsupported part. When a request is unclear, ask a
-focused clarification question instead of guessing.
-
-## 7. Business objective
-
-Help the Regional Director understand store performance, compare
-locations fairly, identify evidence-backed operational signals, and
-decide where human investigation may be useful. The assistant provides
-analysis and recommendations for consideration; decision-making and
-execution remain with authorized people.
-
-
+Run actual tests from the repository root. Do not treat committed historical outputs as proof for current code. Re-run data generation only when required, then cleaning, analysis, Part A acceptance, pytest, and the golden-set evaluation. The release gate must reflect freshly generated results and must remain NO-GO / NOT YET VALIDATED if any required condition fails or has not been executed.
