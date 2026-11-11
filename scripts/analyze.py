@@ -1,142 +1,199 @@
-
+"""Generate data-quality, findings, and executive reports from committed CSVs."""
 from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = ROOT / "data"
-ANALYSIS = ROOT / "analysis"
-CLEAN_PATH = DATA / "store_daily_clean.csv"
-RAW_PATH = DATA / "store_daily.csv"
-
-if not CLEAN_PATH.exists():
-    raise FileNotFoundError("Missing data/store_daily_clean.csv; run python scripts/clean_data.py first")
-if not RAW_PATH.exists():
-    raise FileNotFoundError("Missing data/store_daily.csv; run python scripts/generate_data.py first")
-
-df = pd.read_csv(CLEAN_PATH)
-required = {"store", "date", "revenue_inr", "footfall", "stockout_hours",
-            "achievement_pct", "performance_band"}
-missing = required - set(df.columns)
-if missing:
-    raise ValueError(f"Cleaned dataset is missing required columns: {sorted(missing)}")
-
-rows = []
-for store, group in df.groupby("store"):
-    rows.append({
-        "store": store,
-        "mean_daily_revenue_inr": group["revenue_inr"].mean(),
-        "mean_footfall": group["footfall"].mean(),
-        "mean_stockout_hours": group["stockout_hours"].mean(),
-        "revenue_per_footfall": group["revenue_inr"].sum() / group["footfall"].sum(),
-        "mean_achievement_pct": group["achievement_pct"].mean(),
-        "poor_days": int((group["performance_band"] == "Poor").sum()),
-    })
-summary = pd.DataFrame(rows).sort_values("store")
-all_row = {
-    "store": "All stores",
-    "mean_daily_revenue_inr": df["revenue_inr"].mean(),
-    "mean_footfall": df["footfall"].mean(),
-    "mean_stockout_hours": df["stockout_hours"].mean(),
-    "revenue_per_footfall": df["revenue_inr"].sum() / df["footfall"].sum(),
-    "mean_achievement_pct": df["achievement_pct"].mean(),
-    "poor_days": int((df["performance_band"] == "Poor").sum()),
+DATA, ANALYSIS = ROOT / "data", ROOT / "analysis"
+FILES = {
+    "Raw daily": DATA / "store_daily.csv",
+    "Clean daily": DATA / "store_daily_clean.csv",
+    "Inventory": DATA / "inventory.csv",
+    "Feedback": DATA / "feedback.csv",
 }
-summary = pd.concat([summary, pd.DataFrame([all_row])], ignore_index=True)
 
-ranked = summary[summary["store"] != "All stores"].sort_values(
-    "mean_stockout_hours", ascending=False
-)
-all_stockout_corr = df["revenue_inr"].corr(df["stockout_hours"])
-all_footfall_corr = df["revenue_inr"].corr(df["footfall"])
-pune = df[df["store"] == "Pune"]
-pune_stockout_corr = pune["revenue_inr"].corr(pune["stockout_hours"])
-pune_footfall_corr = pune["revenue_inr"].corr(pune["footfall"])
 
-raw = pd.read_csv(RAW_PATH).drop_duplicates(keep="first")
-raw_baseline = raw.loc[raw["footfall"].notna(), ["revenue_inr", "footfall"]]
-raw_footfall_corr = raw_baseline["revenue_inr"].corr(raw_baseline["footfall"])
+def dtype(series):
+    if pd.api.types.is_integer_dtype(series): return "integer"
+    if pd.api.types.is_float_dtype(series): return "float"
+    if series.name == "date": return "date (ISO-8601 string)"
+    return "string/category"
 
-def money(value):
-    return f"{value:,.2f}"
 
-def number(value):
-    return f"{value:,.2f}"
+def generate_quality(frames):
+    lines = [
+        "# Data Quality Report", "",
+        "## Dataset shapes", "",
+        "| Dataset | Rows | Columns |", "|---|---:|---:|",
+    ]
+    for name, df in frames.items():
+        lines.append(f"| {name} | {len(df)} | {len(df.columns)} |")
+    lines += ["", "## Column data types and missing values", ""]
+    for name, df in frames.items():
+        lines += [f"### {name}", "", "| Column | Type | Missing | Non-missing |",
+                  "|---|---|---:|---:|"]
+        for col in df.columns:
+            missing = int(df[col].isna().sum())
+            lines.append(f"| {col} | {dtype(df[col])} | {missing} | {len(df)-missing} |")
+        lines.append("")
+    lines += ["## Descriptive statistics", ""]
+    for name, df in frames.items():
+        numeric = df.select_dtypes(include="number")
+        lines += [f"### {name}", "",
+                  "| Column | Count | Missing | Min | Q1 | Median | Mean | Q3 | Max | IQR |",
+                  "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+        for col in numeric.columns:
+            s = numeric[col].dropna()
+            if s.empty:
+                vals = ["—"] * 7
+                count = 0
+            else:
+                q1, q3 = s.quantile(.25), s.quantile(.75)
+                vals = [f"{s.min():,.3f}", f"{q1:,.3f}", f"{s.median():,.3f}",
+                        f"{s.mean():,.3f}", f"{q3:,.3f}", f"{s.max():,.3f}",
+                        f"{q3-q1:,.3f}"]
+                count = len(s)
+            lines.append(f"| {col} | {count} | {int(numeric[col].isna().sum())} | " +
+                         " | ".join(vals) + " |")
+        lines.append("")
+    raw = frames["Raw daily"]
+    clean = frames["Clean daily"]
+    inv = frames["Inventory"]
+    fb = frames["Feedback"]
+    raw_footfall = pd.to_numeric(raw["footfall"], errors="coerce")
+    log_path = ANALYSIS / "cleaning_log.csv"
+    log = pd.read_csv(log_path) if log_path.exists() else pd.DataFrame()
+    lines += [
+        "## Cleaning reconciliation", "",
+        f"- Raw daily: {len(raw)} rows; {len(raw.columns)} columns; {int(raw.duplicated().sum())} exact duplicates.",
+        f"- Raw missing footfall: {int(raw_footfall.isna().sum())}; negative footfall: {int((raw_footfall < 0).sum())}.",
+        f"- Clean daily: {len(clean)} rows; {len(clean.columns)} columns; missing cells: {int(clean.isna().sum().sum())}.",
+        f"- Inventory: {len(inv)} rows; {int((inv.stock_units < inv.reorder_threshold).sum())} records below threshold.",
+        f"- Feedback: {len(fb)} rows; missing ratings: {int(fb.rating.isna().sum())}.",
+        f"- Cleaning log rows: {len(log)}.",
+        "",
+        "Numeric statistics use non-missing values. Quartiles use pandas linear interpolation; IQR = Q3 − Q1.",
+        "Date values are ISO-8601 strings in the CSVs. Inventory is an undated snapshot. Missing feedback ratings are not imputed.",
+        "The marketing_spend_inr column is documented as a source field but is prohibited from agent calculations and responses.",
+        "Raw source CSVs must remain unchanged.", "",
+    ]
+    (ANALYSIS / "data_quality_report.md").write_text("\n".join(lines), encoding="utf-8")
 
-lines = [
-    "# Analysis Findings",
-    "",
-    f"## Store performance (cleaned {len(df)} store-days)",
-    "",
-    "| Store | Mean daily revenue (INR) | Mean footfall | Mean stockout hours | Revenue / footfall (INR) | Mean achievement (%) | Poor days |",
-    "|---|---:|---:|---:|---:|---:|---:|",
-]
-for _, row in summary.iterrows():
-    lines.append(
-        f"| {row['store']} | {money(row['mean_daily_revenue_inr'])} | "
-        f"{number(row['mean_footfall'])} | {number(row['mean_stockout_hours'])} | "
-        f"{number(row['revenue_per_footfall'])} | {number(row['mean_achievement_pct'])} | "
-        f"{int(row['poor_days'])} |"
-    )
 
-rank_text = ", ".join(
-    f"{row['store']} {row['mean_stockout_hours']:.2f}"
-    for _, row in ranked.iterrows()
-)
-pune_row = summary[summary["store"] == "Pune"].iloc[0]
-hyderabad_row = summary[summary["store"] == "Hyderabad"].iloc[0]
-lines += [
-    "",
-    "## Premise test: Is Pune the lowest-revenue store because of stockouts?",
-    "",
-    f"Mean stockout hours ranked highest to lowest: {rank_text}. "
-    f"Pune ranks fourth of five, below the all-store mean of {all_row['mean_stockout_hours']:.2f} hours. "
-    "The claim that Pune is the lowest-revenue store because it has the most stockouts is "
-    "**not supported by these data**. Pune has the lowest mean daily revenue and "
-    f"{int(pune_row['poor_days'])} Poor days, but it does not have the highest mean stockout hours.",
-    "",
-    "## Correlations",
-    "",
-    "| Scope | Revenue vs stockout hours | Revenue vs footfall |",
-    "|---|---:|---:|",
-    f"| All stores ({len(df)} cleaned rows) | {all_stockout_corr:.3f} | {all_footfall_corr:.3f} |",
-    f"| Pune only | {pune_stockout_corr:.3f} | {pune_footfall_corr:.3f} |",
-    f"| Raw daily data, deduplicated and non-missing footfall ({len(raw_baseline)} rows; negatives and extremes retained) | — | {raw_footfall_corr:.3f} |",
-    "",
-    "The raw baseline correlation uses deduplicated raw data, excludes missing footfall only, "
-    "and retains negative and extreme values. Correlation describes association; it does not establish causation.",
-    "",
-    "## Facts",
-    "",
-    f"- **Fact 1:** Pune's mean daily revenue is INR {money(pune_row['mean_daily_revenue_inr'])}, the lowest of the five stores.",
-    f"- **Fact 2:** Pune records {int(pune_row['poor_days'])} Poor days; all other stores combined record "
-    f"{int(summary.loc[summary['store'].isin(['Ahmedabad', 'Bengaluru', 'Hyderabad', 'Mumbai']), 'poor_days'].sum())}.",
-    f"- **Fact 3:** Pune's mean stockout duration is {pune_row['mean_stockout_hours']:.2f} hours, "
-    f"versus {hyderabad_row['mean_stockout_hours']:.2f} hours in Hyderabad.",
-    f"- **Fact 4:** Revenue-footfall correlation is {all_footfall_corr:.3f} across cleaned store-days, "
-    f"compared with {raw_footfall_corr:.3f} in the raw deduplicated non-missing baseline.",
-    "",
-    "## Insights",
-    "",
-    "- **Insight 1:** Pune's weak performance is not explained by having the most stockout hours; it ranks fourth on that measure.",
-    "- **Insight 2:** Footfall is strongly associated with revenue in the cleaned data, but this association alone cannot explain why Pune has lower traffic or prove a causal mechanism.",
-    "",
-    "## Hypotheses (unconfirmed)",
-    "",
-    "- **Hypothesis 1 — Pune demand or catchment differences may reduce visits.** Unconfirmed; test with catchment demographics, local competition, store location, customer counts by hour, and local campaign reach.",
-    "- **Hypothesis 2 — Pune's assortment, pricing, or execution may reduce conversion or basket value.** Unconfirmed; test with SKU-level sales, availability and stockout-by-SKU, prices, basket size, conversion rate, promotion history, and customer feedback by store.",
-    "",
-]
-ANALYSIS.mkdir(exist_ok=True)
-output_path = ANALYSIS / "findings.md"
-output_path.write_text("\n".join(lines), encoding="utf-8")
+def generate_findings(df):
+    required = {"store", "date", "revenue_inr", "daily_target_inr", "footfall",
+                "stockout_hours", "achievement_pct", "performance_band"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Missing required columns: {sorted(missing)}")
+    rows = []
+    for store, g in df.groupby("store"):
+        rows.append({
+            "store": store, "mean_revenue": g.revenue_inr.mean(),
+            "mean_footfall": g.footfall.mean(),
+            "mean_stockout": g.stockout_hours.mean(),
+            "revenue_per_footfall": g.revenue_inr.sum()/g.footfall.sum(),
+            "mean_achievement": g.achievement_pct.mean(),
+            "poor_days": int((g.performance_band == "Poor").sum()),
+        })
+    summary = pd.DataFrame(rows)
+    revenue_rank = summary.sort_values("mean_revenue")
+    stockout_rank = summary.sort_values("mean_stockout", ascending=False)
+    pune = summary.loc[summary.store == "Pune"].iloc[0]
+    hyd = summary.loc[summary.store == "Hyderabad"].iloc[0]
+    if revenue_rank.iloc[0].store != "Pune":
+        raise AssertionError("Pune is not the lowest mean-revenue store.")
+    if stockout_rank.iloc[0].store != "Hyderabad":
+        raise AssertionError("Hyderabad is not the highest mean-stockout store.")
+    if stockout_rank.iloc[0].store == "Pune":
+        raise AssertionError("Pune must not be the highest mean-stockout store.")
+    corr_stockout = df.revenue_inr.corr(df.stockout_hours)
+    corr_footfall = df.revenue_inr.corr(df.footfall)
+    lines = [
+        "# Analysis Findings", "",
+        f"## Store performance ({len(df)} cleaned store-days)", "",
+        "| Store | Mean daily revenue (INR) | Mean footfall | Mean stockout hours | Revenue / footfall (INR) | Mean achievement (%) | Poor days |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for r in summary.sort_values("store").itertuples():
+        lines.append(f"| {r.store} | {r.mean_revenue:,.2f} | {r.mean_footfall:,.2f} | "
+                     f"{r.mean_stockout:.2f} | {r.revenue_per_footfall:.2f} | "
+                     f"{r.mean_achievement:.2f} | {r.poor_days} |")
+    lines += ["", "## Verified premise checks", "",
+              "- Pune has the lowest mean daily revenue.",
+              "- Hyderabad has the highest mean stockout hours.",
+              "- Pune does not have the highest mean stockout hours.",
+              "- These observations do not establish that stockouts caused Pune's lower revenue.",
+              "", "## Store ranking", "",
+              "Mean revenue, lowest to highest: " + "; ".join(
+                  f"{r.store}: INR {r.mean_revenue:,.2f}" for r in revenue_rank.itertuples()),
+              "",
+              "Mean stockout hours, highest to lowest: " + "; ".join(
+                  f"{r.store}: {r.mean_stockout:.2f}" for r in stockout_rank.itertuples()),
+              "", "## Correlations", "",
+              "| Scope | Revenue vs stockout hours | Revenue vs footfall |",
+              "|---|---:|---:|",
+              f"| All stores ({len(df)} rows) | {corr_stockout:.3f} | {corr_footfall:.3f} |",
+              f"| Pune ({len(df[df.store == 'Pune'])} rows) | "
+              f"{df.loc[df.store == 'Pune', 'revenue_inr'].corr(df.loc[df.store == 'Pune', 'stockout_hours']):.3f} | "
+              f"{df.loc[df.store == 'Pune', 'revenue_inr'].corr(df.loc[df.store == 'Pune', 'footfall']):.3f} |",
+              "", "Correlation describes association and does not prove causation.",
+              "", "## Limitations", "",
+              "- The datasets are synthetic, observational, and cover one 90-day period.",
+              "- Inventory is an undated snapshot, not historical stock availability.",
+              "- SKU-level sales, conversion, basket size, local demand, and competitor data are not supplied.",
+              "- Potential explanations are hypotheses requiring additional evidence.", ""]
+    (ANALYSIS / "findings.md").write_text("\n".join(lines), encoding="utf-8")
+    return summary, pune, hyd, corr_stockout, corr_footfall
 
-print(summary.to_string(index=False, float_format=lambda value: f"{value:.2f}"))
-print("\nStockout ranking (highest first):")
-print(ranked[["store", "mean_stockout_hours"]].to_string(index=False))
-print("\nCorrelations:")
-print(f"All stores revenue-stockout: {all_stockout_corr:.3f}")
-print(f"All stores revenue-footfall: {all_footfall_corr:.3f}")
-print(f"Pune revenue-stockout: {pune_stockout_corr:.3f}")
-print(f"Pune revenue-footfall: {pune_footfall_corr:.3f}")
-print(f"Raw deduplicated revenue-footfall correlation: {raw_footfall_corr:.3f}")
-print("Wrote analysis/findings.md")
+
+def generate_executive(summary, pune, hyd, corr_stockout, corr_footfall):
+    by_revenue = summary.sort_values("mean_revenue")
+    next_low = float(by_revenue.iloc[1].mean_revenue)
+    top = float(by_revenue.iloc[-1].mean_revenue)
+    p_rev = float(pune.mean_revenue)
+    pct_next = (next_low-p_rev)/next_low*100
+    pct_top = (top-p_rev)/top*100
+    p_stock = float(pune.mean_stockout)
+    h_stock = float(hyd.mean_stockout)
+    stock_gap = (h_stock-p_stock)/h_stock*100
+    report = f"""# Executive Summary
+
+**Dataset:** Synthetic DMart practice data  
+**Period:** 1 April–29 June 2026  
+**Coverage:** 450 cleaned store-days across five stores
+
+## Headline findings
+
+Pune has the lowest mean daily revenue at INR {p_rev:,.2f}. It is {pct_next:.1f}% below the next-lowest store and {pct_top:.1f}% below the highest-revenue store. Hyderabad has the highest mean stockout duration at {h_stock:.2f} hours. Pune averages {p_stock:.2f} hours, {stock_gap:.1f}% lower than Hyderabad, so Pune does not have the highest stockout hours.
+
+## Interpretation
+
+The theory that Pune has the lowest revenue because it has the highest stockout duration is not supported. Revenue-stockout correlation is {corr_stockout:.3f}; revenue-footfall correlation is {corr_footfall:.3f}. These are descriptive associations, not proof of cause.
+
+## Recommended investigation
+
+Review Pune's demand/catchment, SKU-level availability, assortment, pricing, conversion, basket size, and feedback with relevant business owners. Inventory is an undated snapshot and cannot establish historical availability.
+
+**Decision boundary:** This report identifies observed differences and investigation priorities; it does not claim a confirmed cause or execute operational changes.
+"""
+    if len(report.split()) > 250:
+        raise AssertionError("Executive summary exceeds 250 words.")
+    (ANALYSIS / "executive_summary.md").write_text(report, encoding="utf-8")
+
+
+def main():
+    ANALYSIS.mkdir(parents=True, exist_ok=True)
+    frames = {}
+    for name, path in FILES.items():
+        if not path.is_file():
+            raise FileNotFoundError(f"Missing {path.relative_to(ROOT)}")
+        frames[name] = pd.read_csv(path)
+    generate_quality(frames)
+    summary, pune, hyd, c1, c2 = generate_findings(frames["Clean daily"])
+    generate_executive(summary, pune, hyd, c1, c2)
+    print("Generated data_quality_report.md, findings.md, and executive_summary.md")
+    print("Verified: Pune lowest mean revenue; Hyderabad highest mean stockout hours; Pune is not highest.")
+
+
+if __name__ == "__main__":
+    main()
