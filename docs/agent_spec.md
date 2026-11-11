@@ -86,7 +86,7 @@ The following nine intents will be implemented:
 | comparison | Compare stores, products, or periods |
 | inventory | Analyze stock and reorder thresholds |
 | feedback | Analyze ratings and feedback themes |
-| weather | Recognize weather requests and explain that weather data is unavailable in Part C |
+| weather | Retrieve one-day historical weather for a supported store city through `tools/weather.py`; offline evaluation uses deterministic stub mode and live mode uses Open-Meteo |
 | unsupported_metric | Identify unapproved metric requests |
 | out_of_scope | Identify unrelated requests or prohibited actions |
 | diagnostic | Investigate business performance using multiple data sources |
