@@ -11,11 +11,10 @@ TABLE = "store_daily_clean"
 METRIC_FIELDS = {"revenue_inr","daily_target_inr","footfall","stockout_hours","discount_pct","achievement_pct","performance_band"}
 
 def audit_numeric_claims(answer, grounded_values, confidence=None):
-    """Count numeric claims not traceable to returned values or explicit policy metadata.
+    """Count numeric claims not traceable to returned values.
 
-    Dates are identifiers, not numeric claims. Confidence/threshold figures are
-    deterministic routing metadata, not business-data claims. All other numeric
-    values must match a value in the handler's grounded_values payload.
+    Dates and routing metadata are not business numeric claims. All other
+    numeric values must match a value in the handler's grounded_values payload.
     """
     import math
 
@@ -35,27 +34,31 @@ def audit_numeric_claims(answer, grounded_values, confidence=None):
 
     collect(grounded_values or {})
     claims = []
-    date_pattern = r"\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{1,2}\\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\s+\\d{4}\\b"\n    date_spans = [m.span() for m in re.finditer(date_pattern, answer, re.I)]
-    for match in re.finditer(r"(?<![A-Za-z])[-+]?\\d+(?:,\\d{3})*(?:\\.\\d+)?", answer):
+    date_pattern = (
+        r"\b\d{4}-\d{2}-\d{2}\b|"
+        r"\b\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|"
+        r"May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|"
+        r"Nov(?:ember)?|Dec(?:ember)?)\s+\d{4}\b"
+    )
+    date_spans = [m.span() for m in re.finditer(date_pattern, answer, re.I)]
+    number_pattern = r"(?<![A-Za-z])[-+]?\d+(?:,\d{3})*(?:\.\d+)?"
+    for match in re.finditer(number_pattern, answer):
         start, end = match.span()
         if any(left <= start < right for left, right in date_spans):
             continue
 
-        # Do not count pack-size notation (e.g. Amul Milk 1L) as a KPI.
         suffix = answer[end:end + 3]
-        if re.match(r"(?i)^(?:l|kg|g)\\b", suffix):
+        if re.match(r"(?i)^(?:l|kg|g)\b", suffix):
             continue
 
-        # Confidence and the configured confidence floor are routing metadata.
         context = answer[max(0, start - 35):min(len(answer), end + 35)].casefold()
         if "confidence" in context or "minimum is" in context:
             continue
 
-        raw = match.group(0).replace(",", "")
-        value = float(raw)
+        value = float(match.group(0).replace(",", ""))
         if not any(abs(value - candidate) <= max(0.011, abs(candidate) * 1e-9)
                    for candidate in allowed):
-            claims.append(raw)
+            claims.append(match.group(0).replace(",", ""))
     return len(claims), claims
 
 
