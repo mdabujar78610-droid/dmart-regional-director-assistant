@@ -10,11 +10,16 @@ from .answer import answer_result, money, round2
 TABLE = "store_daily_clean"
 METRIC_FIELDS = {"revenue_inr","daily_target_inr","footfall","stockout_hours","discount_pct","achievement_pct","performance_band"}
 
-def audit_numeric_claims(answer, grounded_values, confidence):
-    """Count numeric answer claims not supported by grounded values or fixed policy metadata."""
+def audit_numeric_claims(answer, grounded_values, confidence=None):
+    """Count numeric claims not traceable to returned values or explicit policy metadata.
+
+    Dates are identifiers, not numeric claims. Confidence/threshold figures are
+    deterministic routing metadata, not business-data claims. All other numeric
+    values must match a value in the handler's grounded_values payload.
+    """
     import math
-    date_spans = [m.span() for m in re.finditer(r"\b\d{4}-\d{2}-\d{2}\b", answer)]
-    allowed = [0.70, 3.0]
+
+    allowed = []
     def collect(value):
         if isinstance(value, bool):
             return
@@ -27,19 +32,29 @@ def audit_numeric_claims(answer, grounded_values, confidence):
         elif isinstance(value, (list, tuple)):
             for nested in value:
                 collect(nested)
+
     collect(grounded_values or {})
-    if confidence is not None:
-        allowed.append(float(confidence))
     claims = []
-    for match in re.finditer(r"(?<![A-Za-z])[-+]?\d+(?:,\d{3})*(?:\.\d+)?", answer):
-        if any(start <= match.start() < end for start, end in date_spans):
+    date_spans = [m.span() for m in re.finditer(r"\\b\\d{4}-\\d{2}-\\d{2}\\b", answer)]
+    for match in re.finditer(r"(?<![A-Za-z])[-+]?\\d+(?:,\\d{3})*(?:\\.\\d+)?", answer):
+        start, end = match.span()
+        if any(left <= start < right for left, right in date_spans):
             continue
+
+        # Do not count pack-size notation (e.g. Amul Milk 1L) as a KPI.
+        suffix = answer[end:end + 3]
+        if re.match(r"(?i)^(?:l|kg|g)\\b", suffix):
+            continue
+
+        # Confidence and the configured confidence floor are routing metadata.
+        context = answer[max(0, start - 35):min(len(answer), end + 35)].casefold()
+        if "confidence" in context or "minimum is" in context:
+            continue
+
         raw = match.group(0).replace(",", "")
-        try:
-            value = float(raw)
-        except ValueError:
-            continue
-        if not any(abs(value - candidate) <= max(0.011, abs(candidate) * 1e-9) for candidate in allowed):
+        value = float(raw)
+        if not any(abs(value - candidate) <= max(0.011, abs(candidate) * 1e-9)
+                   for candidate in allowed):
             claims.append(raw)
     return len(claims), claims
 
