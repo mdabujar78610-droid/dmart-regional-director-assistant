@@ -127,7 +127,7 @@ class Agent:
             questions = []
             if "store" in missing: questions.append("Which store city (Mumbai, Pune, Hyderabad, Bengaluru, or Ahmedabad)?")
             if p.get("date_range"):
-                questions.append("Please specify one date or date range? Weather lookup accepts one date only, so choose a single date within the available period.")
+                questions.append("Please specify a date or date range. Weather lookup accepts one date only, so choose a single date within the available period.")
             elif "date" in missing or "date_range" in missing:
                 questions.append("Which single date in the available period?")
             return " ".join(questions) or "Please clarify the weather request."
