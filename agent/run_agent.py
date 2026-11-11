@@ -86,15 +86,45 @@ class Agent:
         if p.get("required_entities") or p["confidence"] < .70:
             return answer_result("Clarification Needed", self._clarify(p), limitations=[f"Interpretation confidence {p['confidence']:.2f}; minimum is 0.70."])
         if intent == "weather":
-            return answer_result("Safe Failure", "Weather data is not available in Part C.")
+            if not store or not p.get("date"):
+                return answer_result("Clarification Needed",
+                    "Please specify one supported store city (Mumbai, Pune, Hyderabad, Bengaluru, or Ahmedabad) and one date in the available period.")
+            from tools.weather import get_weather
+            weather = get_weather(store, p["date"])
+            if not weather.get("ok"):
+                return answer_result("Safe Failure", f"Weather lookup unavailable: {weather.get('error', 'unknown error')}.")
+            values = {key: weather[key] for key in ("temperature_c", "humidity_pct", "wind_kmh", "rain_mm")}
+            evidence = [{"dataset": "Open-Meteo archive API" if weather["mode"] == "live" else "deterministic weather stub",
+                         "fields": list(values), "filters": {"city": store, "date": p["date"]}}]
+            body = (f"{store}, {p['date']}: temperature {values['temperature_c']:.1f} °C; "
+                    f"humidity {values['humidity_pct']:.1f}%; wind {values['wind_kmh']:.1f} km/h; "
+                    f"rainfall {values['rain_mm']:.1f} mm. Weather mode: {weather['mode']}.")
+            return answer_result("Answered", body, values, evidence,
+                                 "Daily weather values returned by tools.weather.get_weather")
         if intent == "lookup":
             if p.get("date"):
                 row = self._python_daily(store, p["date"], failures)
                 val = row[metric]
                 if pd.isna(val): return answer_result("Safe Failure", "No non-missing value exists for the selected store, metric and date.")
                 formatted = money(val) if metric.endswith("_inr") else f"{float(val):.2f}"
-                return answer_result("Answered", f"{store}, {p['date']}: {metric} = {formatted}. Source: store_daily_clean.csv.",
-                    {metric: float(val)}, [{"dataset":"store_daily_clean.csv","fields":[metric,"store","date"],"filters":{"store":store,"date":p["date"]}}], "Direct one-store, one-date Python lookup")
+                body = f"{store}, {p['date']}: {metric} = {formatted}. Source: store_daily_clean.csv."
+                grounded = {metric: float(val)}
+                evidence = [{"dataset":"store_daily_clean.csv","fields":[metric,"store","date"],"filters":{"store":store,"date":p["date"]}}]
+                if re.search(r"\\b(weather|rain|temperature|humidity|hot|cold)\\b", q, re.I):
+                    from tools.weather import get_weather
+                    weather = get_weather(store, p["date"])
+                    if weather.get("ok"):
+                        weather_values = {key: weather[key] for key in ("temperature_c", "humidity_pct", "wind_kmh", "rain_mm")}
+                        grounded.update(weather_values)
+                        evidence.append({"dataset": "Open-Meteo archive API" if weather["mode"] == "live" else "deterministic weather stub",
+                                         "fields": list(weather_values), "filters": {"city": store, "date": p["date"]}})
+                        body += (f" Weather: temperature {weather_values['temperature_c']:.1f} °C; "
+                                 f"humidity {weather_values['humidity_pct']:.1f}%; wind {weather_values['wind_kmh']:.1f} km/h; "
+                                 f"rainfall {weather_values['rain_mm']:.1f} mm (mode: {weather['mode']}).")
+                    else:
+                        body += f" Weather unavailable: {weather.get('error', 'unknown error')}."
+                return answer_result("Answered", body, grounded, evidence,
+                    "Direct one-store, one-date Python lookup; optional daily weather tool lookup")
             clause, params, period = self._base(p)
             if metric == "performance_band":
                 sql = f"SELECT performance_band, COUNT(*) AS n FROM {TABLE} WHERE {clause} AND store=? GROUP BY performance_band ORDER BY performance_band"
