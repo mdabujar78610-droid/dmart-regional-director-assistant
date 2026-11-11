@@ -1,1 +1,1 @@
-"""External tools used by the DMart assistant."""
+"""Golden-set evaluation and reporting."""
