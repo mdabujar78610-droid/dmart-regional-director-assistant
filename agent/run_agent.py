@@ -71,6 +71,11 @@ class Agent:
         if "metric" in missing: parts.append("approved metric (revenue, target, footfall, stockout hours, discount, achievement, or performance band)")
         if "product" in missing: parts.append("product")
         if "date" in missing or "date_range" in missing: parts.append("date or date range")
+        if p.get("intent") == "weather":
+            questions = []
+            if "store" in missing: questions.append("Which store city (Mumbai, Pune, Hyderabad, Bengaluru, or Ahmedabad)?")
+            if "date" in missing or "date_range" in missing: questions.append("Which single date in the available period?")
+            return " ".join(questions) or "Please clarify the weather request."
         return "Please specify the " + " and ".join(parts) + "."
 
     def _handle(self, q, p, failures):
@@ -110,7 +115,7 @@ class Agent:
                 body = f"{store}, {p['date']}: {metric} = {formatted}. Source: store_daily_clean.csv."
                 grounded = {metric: float(val)}
                 evidence = [{"dataset":"store_daily_clean.csv","fields":[metric,"store","date"],"filters":{"store":store,"date":p["date"]}}]
-                if re.search(r"\\b(weather|rain|temperature|humidity|hot|cold)\\b", q, re.I):
+                if re.search(r"\b(weather|rain|temperature|humidity|hot|cold)\b", q, re.I):
                     from tools.weather import get_weather
                     weather = get_weather(store, p["date"])
                     if weather.get("ok"):
