@@ -13,7 +13,10 @@ def check(condition, message):
 
 
 def close(actual, expected, tolerance=0.01):
-    return abs(float(actual) - float(expected)) <= tolerance
+    difference = actual - expected
+    if hasattr(difference, "abs"):
+        return difference.abs().le(tolerance)
+    return abs(float(difference)) <= tolerance
 
 
 required_paths = [
