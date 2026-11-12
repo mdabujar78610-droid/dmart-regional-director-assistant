@@ -1,0 +1,71 @@
+name: Part D Release Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'agent/**'
+      - 'tools/weather.py'
+      - 'tests/**'
+      - 'eval/**'
+      - 'scripts/run_agent_tests.py'
+      - 'scripts/run_part_c_acceptance.py'
+      - 'requirements.txt'
+      - '.github/workflows/part-d-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: part-d-main-validation
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run Part C acceptance and audit
+        run: python scripts/run_part_c_acceptance.py
+      - name: Run agent acceptance suite
+        run: python scripts/run_agent_tests.py
+      - name: Run pytest including weather checks
+        run: python -m pytest -q --junitxml=pytest-results.xml
+      - name: Run full golden-set evaluation and release gate
+        run: python -m eval.run_eval
+      - name: Commit verified evaluation evidence
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add eval/eval_results.csv eval/eval_runs.jsonl eval/eval_summary.md docs/release_gate.md logs/runs.jsonl outputs/acceptance_transcript.md
+          if ! git diff --cached --quiet; then
+            git commit -m "Record fresh Part D release validation evidence"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Upload release validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: part-d-release-validation
+          path: |
+            pytest-results.xml
+            eval/eval_results.csv
+            eval/eval_runs.jsonl
+            eval/eval_summary.md
+            docs/release_gate.md
+            logs/runs.jsonl
+            outputs/acceptance_transcript.md
+          if-no-files-found: error
