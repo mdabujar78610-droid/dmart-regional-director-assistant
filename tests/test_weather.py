@@ -1,3 +1,5 @@
+"""Rubric checks for deterministic stub and structured weather errors."""
+
 import os
 
 from tools.weather import get_weather
