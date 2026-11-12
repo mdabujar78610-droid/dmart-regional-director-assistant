@@ -67,13 +67,13 @@ dmart-regional-director-assistant/
 ├── logs/
 │   └── runs.jsonl
 └── eval/
-    ├── golden_set.csv
-    ├── golden_set_derivation.md
-    ├── run_eval.py
     ├── build_reports.py
     ├── eval_results.csv
     ├── eval_runs.jsonl
-    └── eval_summary.md
+    ├── eval_summary.md
+    ├── golden_set.csv
+    ├── golden_set_derivation.md
+    └── run_eval.py
 ```
 
 ## 4. Datasets
