@@ -93,12 +93,15 @@ if clean is not None:
     check((clean.performance_band == expected_band).all(), "Performance bands do not match achievement")
 
 if log is not None:
+    check(
+        list(log.columns) == ["store", "date", "old_footfall", "new_footfall", "rule"],
+        f"Cleaning log columns are {list(log.columns)}; expected the five assignment columns",
+    )
     rules = log["rule"].value_counts().to_dict()
-    check(rules.get("duplicate_removed", 0) == 3, "Expected three duplicate-removal log entries")
-    check(rules.get("negative_to_missing", 0) == 1, "Expected one negative-to-missing log entry")
-    check(rules.get("iqr_cap", 0) == 2, "Expected two IQR cap log entries")
-    check(rules.get("median_impute", 0) == 5, "Expected five median-imputation log entries")
-    check(rules.get("derived_column", 0) == 6, "Expected six derived-column log entries")
+    check(len(log) == 8, f"Expected 8 cleaning-change rows; found {len(log)}")
+    check(rules.get("negative_to_missing", 0) == 1, "Expected one negative-to-missing row")
+    check(rules.get("iqr_cap", 0) == 2, "Expected two IQR cap rows")
+    check(rules.get("median_impute", 0) == 5, "Expected five median-imputation rows")
     negative = log[log.rule == "negative_to_missing"]
     check(len(negative) == 1 and negative.iloc[0].store == "Hyderabad"
           and negative.iloc[0]["date"] == "2026-04-21"
@@ -157,7 +160,8 @@ quality_path = ANALYSIS / "data_quality_report.md"
 if quality_path.is_file():
     quality = quality_path.read_text(encoding="utf-8")
     for phrase in ("Column data types and missing values", "Descriptive statistics",
-                   "Median", "IQR", "marketing_spend_inr"):
+                   "Raw daily source checks", "Per-store raw footfall IQR bounds and outlier rows",
+                   "Q1", "Q3", "Median", "IQR", "marketing_spend_inr"):
         check(phrase.lower() in quality.lower(), f"Data quality report missing: {phrase}")
 
 summary_path = ANALYSIS / "executive_summary.md"
