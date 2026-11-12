@@ -166,7 +166,7 @@ if quality_path.is_file():
     for phrase in ("Column data types and missing values", "Descriptive statistics",
                    "Raw daily source checks", "Per-store raw footfall IQR bounds and outlier rows",
                    "Q1", "Q3", "Median", "IQR", "marketing_spend_inr", "## Decisions",
-                   "Ahmedabad | 1,582.38 | 2,019.25 | 174.75 | 1,582.38 | 2,281.38",
+                   "Ahmedabad | 1,844.50 | 2,019.25 | 174.75 | 1,582.38 | 2,281.38",
                    "Bengaluru | 1,952.00 | 2,211.00 | 259.00 | 1,563.50 | 2,599.50",
                    "Hyderabad | 2,053.00 | 2,356.00 | 303.00 | 1,598.50 | 2,810.50",
                    "Mumbai | 2,246.00 | 2,542.00 | 296.00 | 1,802.00 | 2,986.00",
