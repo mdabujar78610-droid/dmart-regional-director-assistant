@@ -21,10 +21,6 @@ concurrency:
   group: main-validation-all-workflows
   cancel-in-progress: false
 
-concurrency:
-  group: main-validation-all-workflows
-  cancel-in-progress: false
-
 jobs:
   validate:
     runs-on: ubuntu-latest
