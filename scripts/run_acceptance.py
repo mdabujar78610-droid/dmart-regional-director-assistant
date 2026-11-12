@@ -153,6 +153,10 @@ if findings_path.is_file():
         "Hyderabad has the highest mean stockout hours",
         "Pune does not have the highest mean stockout hours",
         "do not establish that stockouts caused",
+        "| **All stores** | 861,535.24 | 2,023.59 | 2.74 | 425.75 | 91.24 | 71 |",
+        "Raw deduplicated non-missing footfall (446 rows)",
+        "0.548",
+        "## Facts", "## Insights", "## Hypotheses (unconfirmed)",
     ):
         check(phrase.lower() in findings.lower(), f"Findings report missing: {phrase}")
 
@@ -161,13 +165,24 @@ if quality_path.is_file():
     quality = quality_path.read_text(encoding="utf-8")
     for phrase in ("Column data types and missing values", "Descriptive statistics",
                    "Raw daily source checks", "Per-store raw footfall IQR bounds and outlier rows",
-                   "Q1", "Q3", "Median", "IQR", "marketing_spend_inr"):
+                   "Q1", "Q3", "Median", "IQR", "marketing_spend_inr", "## Decisions",
+                   "Ahmedabad | 1,582.38 | 2,019.25 | 174.75 | 1,582.38 | 2,281.38",
+                   "Bengaluru | 1,952.00 | 2,211.00 | 259.00 | 1,563.50 | 2,599.50",
+                   "Hyderabad | 2,053.00 | 2,356.00 | 303.00 | 1,598.50 | 2,810.50",
+                   "Mumbai | 2,246.00 | 2,542.00 | 296.00 | 1,802.00 | 2,986.00",
+                   "Pune | 1,434.00 | 1,593.50 | 159.50 | 1,194.75 | 1,832.75"):
         check(phrase.lower() in quality.lower(), f"Data quality report missing: {phrase}")
 
 summary_path = ANALYSIS / "executive_summary.md"
 if summary_path.is_file():
-    words = len(summary_path.read_text(encoding="utf-8").split())
+    summary_text = summary_path.read_text(encoding="utf-8")
+    words = len(summary_text.split())
     check(words <= 250, f"Executive summary has {words} words; maximum is 250")
+    for phrase in ("**Author:**", "## Headline finding", "## Magnitude",
+                   "## What is and is not driving the finding", "## Supporting facts",
+                   "## Open hypotheses and data needed", "## Recommendation",
+                   "**Owner:**", "**Timeline:**"):
+        check(phrase.lower() in summary_text.lower(), f"Executive summary missing: {phrase}")
 
 if errors:
     print("PART A ACCEPTANCE CHECKS FAILED")
