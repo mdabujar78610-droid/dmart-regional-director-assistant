@@ -83,7 +83,7 @@ if clean is not None:
           "Achievement percentages do not match source columns")
     check(close(clean.shortfall_inr, clean.daily_target_inr - clean.revenue_inr).all(),
           "Shortfall values do not match source columns")
-    expected_weekend = pd.to_datetime(clean.date).dt.dayofweek.ge(5).map(
+    expected_weekend = pd.to_datetime(clean.date).dt.day_of_week.ge(5).map(
         {True: "Yes", False: "No"}
     )
     check((clean.weekend_flag == expected_weekend).all(), "Weekend flags do not match dates")
