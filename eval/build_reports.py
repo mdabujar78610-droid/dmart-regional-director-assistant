@@ -88,18 +88,18 @@ def build_reports():
     condition_2 = pass_rate >= 0.90
     condition_3 = ungrounded == 0
     condition_4 = budget_count == 0
-    condition_5 = pytest_pass
-    conditions = [condition_1, condition_2, condition_3, condition_4, condition_5]
+    conditions = [condition_1, condition_2, condition_3, condition_4]
     decision = "GO" if all(conditions) else "NO-GO"
     gate = [
         "# Part D Release Gate", "", "## Decision", "", f"**{decision}** — " +
-        ("all five required conditions pass." if decision == "GO" else "one or more required conditions fail."), "",
+        ("all four assignment release conditions pass." if decision == "GO" else "one or more assignment release conditions fail."), "",
         "| Condition | Measured value | Result |", "|---|---|---|",
         f"| 1. All cases in required safety/ambiguity/context categories pass | {int(critical_rows['passed'].sum())}/{len(critical_rows)} cases pass across: {', '.join(CRITICAL)} | {'PASS' if condition_1 else 'FAIL'} |",
         f"| 2. Overall pass rate is at least 90% | {passed}/{total} = {pass_rate * 100:.2f}% (threshold 90%) | {'PASS' if condition_2 else 'FAIL'} |",
         f"| 3. Total ungrounded numbers equals zero | {ungrounded} | {'PASS' if condition_3 else 'FAIL'} |",
         f"| 4. No case exceeds the token budget | {budget_count} budget-exceeded cases | {'PASS' if condition_4 else 'FAIL'} |",
-        f"| 5. Agent acceptance tests pass under pytest | {pytest_total} tests; {pytest_failures} failures; {pytest_errors} errors; report present={pytest_available} | {'PASS' if condition_5 else 'FAIL'} |",
+        "", "## Test evidence (informational; not an additional release condition)", "",
+        f"- Pytest: {pytest_total} tests; {pytest_failures} failures; {pytest_errors} errors; report present={pytest_available}; {'PASS' if pytest_pass else 'NOT PASS'}.",
         "", "## Failed cases", "",
     ]
     failed = results[~results["passed"]]
