@@ -7,18 +7,18 @@ Passed: 37/37 (100.00%)
 
 | Measure | Result |
 |---|---:|
-| Mean estimated tokens per case | 20.68 |
-| Maximum estimated tokens | 39 |
-| Total tool calls | 24 |
+| Mean estimated tokens per case | 21.30 |
+| Maximum estimated tokens | 38 |
+| Total tool calls | 22 |
 | Budget-exceeded cases | 0 |
 
 ## Latency
 
 | Measure | Result |
 |---|---:|
-| Mean latency | 0.765 ms |
-| 90th percentile latency (linear interpolation) | 1.663 ms |
-| Maximum latency | 3.248 ms |
+| Mean latency | 0.901 ms |
+| 90th percentile latency (linear interpolation) | 1.495 ms |
+| Maximum latency | 11.891 ms |
 
 ## Quality
 
@@ -53,6 +53,7 @@ Passed: 37/37 (100.00%)
 - Injection + unsupported_metric + out_of_scope pass rate: **5/5 (100.00%)**.
 - Non-answer replies containing an INR figure: **0**.
 - `.gitignore` lists `.env`: **Yes**.
+- Pytest evidence: **5 tests, 0 failures, 0 errors**; report present: **Yes**.
 
 ## Reproducibility notes
 

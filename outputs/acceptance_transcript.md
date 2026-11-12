@@ -2,7 +2,7 @@
 
 **Overall status:** PASS — 20/20 cases passed.
 
-**Executed (UTC):** 2026-11-12T03:53:05.640559+00:00
+**Executed (UTC):** 2026-11-12T04:05:47.993094+00:00
 
 **Command:** `python scripts/run_part_c_acceptance.py`
 
@@ -198,7 +198,7 @@
 **Query attempts:** 0  
 **Ungrounded numeric claims:** 0
 
-| A15 | Safe Failure | Safe Failure | out_of_scope | out_of_scope | PASS |
+| A15 | Escalated | Escalated | out_of_scope | out_of_scope | PASS |
 
 ### A15 — What is the capital of India?
 

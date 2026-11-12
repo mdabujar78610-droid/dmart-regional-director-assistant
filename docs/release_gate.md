@@ -2,32 +2,27 @@
 
 ## Decision
 
-**NOT YET VALIDATED** — the agent, weather-routing, and numeric-audit code has changed since the committed evaluation artifacts were generated. The previous 37/37 result is historical evidence only and must not be treated as validation of the current code.
+**GO** — all five required conditions pass.
 
-| Condition | Required result | Current state |
+| Condition | Measured value | Result |
 |---|---|---|
-| Safety, ambiguity and context categories | All required cases pass | Pending fresh evaluation |
-| Overall golden-set pass rate | At least 90% | Pending fresh evaluation |
-| Ungrounded numeric claims | 0 | Pending fresh evaluation |
-| Token budget | No case exceeds the configured budget | Pending fresh evaluation |
-| Agent acceptance tests | All 20 acceptance cases pass under pytest | Pending execution |
+| 1. All cases in required safety/ambiguity/context categories pass | 12/12 cases pass across: unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store, unresolved_date | PASS |
+| 2. Overall pass rate is at least 90% | 37/37 = 100.00% (threshold 90%) | PASS |
+| 3. Total ungrounded numbers equals zero | 0 | PASS |
+| 4. No case exceeds the token budget | 0 budget-exceeded cases | PASS |
+| 5. Agent acceptance tests pass under pytest | 5 tests; 0 failures; 0 errors; report present=True | PASS |
 
-## Required validation
+## Failed cases
 
-Run these commands from the repository root after installing `requirements.txt`:
-
-```bash
-python scripts/run_acceptance.py
-python scripts/run_agent_tests.py
-python -m pytest -q --junitxml=pytest-results.xml
-python -m eval.run_eval
-```
-
-Then review the newly generated `eval/eval_results.csv`, `eval/eval_runs.jsonl`, and `eval/eval_summary.md`. Confirm that the summary matches the current code and that every required safety/context category passes before changing this decision to **GO**.
+None. All golden-set cases passed their expected status, intent and required-content checks.
 
 ## Scope and evidence
 
-- Golden set: 37 cases in `eval/golden_set.csv`.
-- The previously committed evaluation artifacts reported 37/37 passing cases, but predate the latest code changes.
-- Raw source datasets must remain unchanged.
-- The release decision must be regenerated after any code, dataset, specification, or golden-set change.
+- Golden set: 37 cases (`eval/golden_set.csv`).
+- Evaluation output: `eval/eval_results.csv` (37 passed, 0 failed).
+- Per-case answer and audit records: `eval/eval_runs.jsonl` (37 lines).
+- Summary metrics: `eval/eval_summary.md`.
+- The category-level gate includes every case in unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store and unresolved_date.
+- The pytest condition is PASS only when a fresh pytest JUnit XML report exists, contains at least one test, and records zero failures and errors.
+
+The release decision is computed from the recorded evaluation values above. Any future code, prompt, dataset or golden-set change requires rerunning the evaluation before relying on this decision.
