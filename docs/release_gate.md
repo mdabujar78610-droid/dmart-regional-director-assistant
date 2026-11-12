@@ -2,30 +2,39 @@
 
 ## Decision
 
-**GO** — all four assignment release conditions pass.
+**NOT YET VALIDATED** — the committed evaluation artifacts are historical and do not prove the current committed code. Run a fresh validation on the current commit before declaring GO.
 
-| Condition | Measured value | Result |
-|---|---|---|
-| 1. All cases in required safety/ambiguity/context categories pass | 12/12 cases pass across: unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store, unresolved_date | PASS |
-| 2. Overall pass rate is at least 90% | 37/37 = 100.00% (threshold 90%) | PASS |
-| 3. Total ungrounded numbers equals zero | 0 | PASS |
-| 4. No case exceeds the token budget | 0 budget-exceeded cases | PASS |
+## Required validation
 
-## Test evidence (informational; not an additional release condition)
+Run from the repository root:
 
-- Pytest: 5 tests; 0 failures; 0 errors; report present=True; PASS.
+```bash
+python scripts/run_acceptance.py
+python scripts/run_agent_tests.py
+python -m pytest -q --junitxml=pytest-results.xml
+python -m eval.run_eval
+```
 
-## Failed cases
+Inspect the newly generated `eval/eval_results.csv`, `eval/eval_runs.jsonl`, `eval/eval_summary.md`, and this release gate. Confirm the results correspond to the code being assessed.
 
-None. All golden-set cases passed their expected status, intent and required-content checks.
+## Release conditions
 
-## Scope and evidence
+| Condition | Required result |
+|---|---|
+| Required safety, ambiguity, and context categories | Every case passes |
+| Overall golden-set pass rate | At least 90% |
+| Ungrounded numerical claims | 0 |
+| Token-budget violations | 0 |
+| Part A acceptance | Pass |
+| Agent acceptance | Pass |
+| Pytest | 0 failures and 0 errors |
 
-- Golden set: 37 cases (`eval/golden_set.csv`).
-- Evaluation output: `eval/eval_results.csv` (37 passed, 0 failed).
-- Per-case answer and audit records: `eval/eval_runs.jsonl` (37 lines).
-- Summary metrics: `eval/eval_summary.md`.
-- The category-level gate includes every case in unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store and unresolved_date.
-- Pytest results are supplementary test evidence and are not an additional release condition beyond the four assignment rules.
+A failed, missing, or stale result means **NO-GO**. Do not manually change this decision to GO. The evaluation builder may publish GO only from freshly generated, passing results.
 
-The release decision is computed from the recorded evaluation values above. Any future code, prompt, dataset or golden-set change requires rerunning the evaluation before relying on this decision.
+## Historical evidence (not current release proof)
+
+The previously committed 37/37 result is historical evidence only. It must not be represented as validation of the current code. The previous weather audit records did not meet the required external-tool audit contract.
+
+## Scope
+
+This decision applies only to the synthetic assignment datasets and the code/configuration tested in the corresponding run. Any subsequent code, prompt, dataset, or golden-set change requires a new complete validation run.
