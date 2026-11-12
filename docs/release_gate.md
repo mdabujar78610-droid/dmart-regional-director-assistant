@@ -26,6 +26,6 @@ None. All golden-set cases passed their expected status, intent and required-con
 - Per-case answer and audit records: `eval/eval_runs.jsonl` (37 lines).
 - Summary metrics: `eval/eval_summary.md`.
 - The category-level gate includes every case in unsupported_metric, out_of_scope, out_of_range_date, injection, ambiguity, unresolved_store and unresolved_date.
-- The pytest condition is PASS only when a fresh pytest JUnit XML report exists, contains at least one test, and records zero failures and errors.
+- Pytest results are supplementary test evidence and are not an additional release condition beyond the four assignment rules.
 
 The release decision is computed from the recorded evaluation values above. Any future code, prompt, dataset or golden-set change requires rerunning the evaluation before relying on this decision.
