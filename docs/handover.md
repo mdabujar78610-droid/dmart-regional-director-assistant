@@ -19,10 +19,14 @@ GitHub Actions run [#43142990496](https://github.com/mdabujar78610-droid/dmart-r
 | Exact duplicate rows removed | 3 |
 | Pytest | 2 passed |
 | Golden evaluation | 37/37 passed |
-| Evaluation release decision | GO |
+| Evaluation release decision on baseline commit only | GO (historical; not applicable to current `main`) |
 | GitHub Actions workflow | Success |
 
 The workflow logs also show that analysis reports were regenerated and validation artifacts were uploaded to the Actions run.
+
+## Current release status
+
+The successful GO result above applies only to baseline commit `445006102bf12eb3c095be6bc5aa2186da65f724`. It is historical evidence, not a release approval for the current `main` branch. The current release decision is **NOT YET VALIDATED** until the required tests and golden-set evaluation are rerun against the exact current commit. See `docs/release_gate.md` for the validation steps.
 
 ## Follow-up cleanup
 
