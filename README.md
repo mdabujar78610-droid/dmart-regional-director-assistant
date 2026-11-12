@@ -144,3 +144,37 @@ The committed golden set contains 37 cases. The currently committed evaluation a
 - The analysis is descriptive and observational; it cannot prove why revenue differs between stores.
 - Inventory is an undated snapshot and must not be interpreted as historical inventory.
 - The agent is a bounded, deterministic analytics assistant, not an autonomous store-operations system.
+
+
+## Agent execution pipeline and technique map
+
+The current agent is a deterministic, read-only analytics workflow. Its eight stages map to the implementation as follows:
+
+| Stage | Implementation | Technique |
+|---|---|---|
+| 1. Understand | `agent/understand.py` | Rule-based parsing of intent, metrics, stores, product and date filters, with a confidence score |
+| 2. Route | `agent/run_agent.py` | Explicit dispatch to supported handlers; unsupported requests are stopped |
+| 3. Validate | `agent/understand.py`, `agent/fetch.py` | Required-entity checks, confidence threshold, approved table/field validation |
+| 4. Fetch | `agent/fetch.py` | Parameterized SQL queries and bounded query execution |
+| 5. Calculate | `agent/run_agent.py`, `agent/answer.py` | Approved aggregations and calculations; `Decimal` with `ROUND_HALF_UP` for two-decimal display |
+| 6. Answer | `agent/run_agent.py`, `agent/answer.py` | Deterministic response construction with grounded values, evidence and limitations |
+| 7. Ground | `agent/run_agent.py` | Numeric-claim audit against the handler's grounded-values payload |
+| 8. Record | `agent/run_agent.py` | JSONL request logging, including route, attempts, evidence, grounding and status |
+
+No generative model is currently required or claimed by this implementation. Any future LLM layer must remain optional and must not bypass metric allowlists, validation, read-only controls or numeric grounding.
+
+## Calculation and rounding policy
+
+Displayed two-decimal values use Python `Decimal` with `ROUND_HALF_UP` in `agent/answer.py`. Currency is formatted as INR. Source CSV values are not rewritten by display rounding. Averages must use available non-null observations, with relevant denominators and missing-data limitations disclosed. Inventory remains an undated snapshot and must not be presented as historical inventory.
+
+## Iteration-2 backlog
+
+1. **P1 — Language coverage:** expand tested aliases and question phrasing while retaining the 0.70 clarification threshold.
+2. **P1 — Grounding tests:** add regression cases for numeric formatting, percentages, counts, dates and units; preserve zero ungrounded numeric claims as a release requirement.
+3. **P2 — Diagnostics:** add cross-dataset summaries only where approved fields and compatible data grains support them; label association rather than causation.
+4. **P2 — Observability:** improve structured error categories and retry evidence while retaining the maximum of three attempts.
+5. **P3 — Optional generative layer:** evaluate only as an optional interface enhancement after deterministic safety and release tests pass.
+
+## Release validation
+
+After code or golden-set changes, run `python -m pytest -q` and `python -m eval.run_eval` from the repository root, then review the newly generated reports and `docs/release_gate.md`. Do not treat previously committed evaluation results as proof that the latest revision passes.
