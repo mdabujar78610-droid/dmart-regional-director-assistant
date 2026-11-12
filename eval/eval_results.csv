@@ -1,38 +1,38 @@
 case_id,category,expected_status,actual_status,intent_match,contains_match,latency_ms,tokens_est,tool_calls,ungrounded_numbers,budget_exceeded,passed
-A01,lookup,Answered,Answered,True,True,3.051,16,1,0,False,True
-A02,lookup,Answered,Answered,True,True,0.919,11,1,0,False,True
-A03,lookup,Answered,Answered,True,True,0.528,11,1,0,False,True
-A04,ambiguity,Clarification Needed,Clarification Needed,True,True,0.166,24,0,0,False,True
-A05,lookup,Answered,Answered,True,True,0.589,11,1,0,False,True
-A06,typo,Answered,Answered,True,True,0.486,13,1,0,False,True
-A07,target_vs_actual,Drafted,Drafted,True,True,0.531,21,1,0,False,True
-A08,target_vs_actual,Answered,Answered,True,True,0.505,21,1,0,False,True
-A09,target_vs_actual,Answered,Answered,True,True,0.501,21,1,0,False,True
-A10,comparison,Answered,Answered,True,True,1.184,38,1,0,False,True
-A11,comparison,Answered,Answered,True,True,0.9,28,1,0,False,True
-A12,inventory,Answered,Answered,True,True,1.567,31,1,0,False,True
-A13,feedback,Answered,Answered,True,True,0.643,21,2,0,False,True
-A14,unsupported_metric,Safe Failure,Safe Failure,True,True,0.153,21,0,0,False,True
-A15,out_of_scope,Escalated,Escalated,True,True,0.344,25,0,0,False,True
-A16,out_of_range_date,Safe Failure,Safe Failure,True,True,0.154,18,0,0,False,True
-A17,diagnostic,Escalated,Escalated,True,True,0.135,27,0,0,False,True
-A18,ambiguity,Clarification Needed,Clarification Needed,True,True,0.303,16,0,0,False,True
-A19,retry,Answered,Answered,True,True,0.542,16,1,0,False,True
-A20,retry,Escalated,Escalated,True,True,0.196,19,1,0,False,True
-W01,lookup,Answered,Answered,True,True,11.891,36,1,0,False,True
-W02,weather,Answered,Answered,True,True,0.25,24,0,0,False,True
-W03,weather,Clarification Needed,Clarification Needed,True,True,0.397,17,0,0,False,True
-R01,comparison,Answered,Answered,True,True,2.177,38,1,0,False,True
-C01,typo,Answered,Answered,True,True,0.63,13,1,0,False,True
-C02,synonym,Answered,Answered,True,True,0.551,14,1,0,False,True
-C03,ambiguity,Clarification Needed,Clarification Needed,True,True,0.151,24,0,0,False,True
-C04,unsupported_metric,Safe Failure,Safe Failure,True,True,0.128,20,0,0,False,True
-C05,out_of_scope,Escalated,Escalated,True,True,0.34,25,0,0,False,True
-C06,injection,Escalated,Escalated,True,True,0.149,27,0,0,False,True
-C07,out_of_range_date,Safe Failure,Safe Failure,True,True,0.145,18,0,0,False,True
-C08,context_setup,Answered,Answered,True,True,0.501,14,1,0,False,True
-C09,unresolved_store,Clarification Needed,Clarification Needed,True,True,0.366,16,0,0,False,True
-C10,context_setup,Answered,Answered,True,True,0.484,14,1,0,False,True
-C11,unresolved_date,Clarification Needed,Clarification Needed,True,True,0.141,13,0,0,False,True
-C12,weather_range,Clarification Needed,Clarification Needed,True,True,0.199,32,0,0,False,True
-C13,weather_ignored,Answered,Answered,True,True,1.447,34,1,0,False,True
+A01,lookup,Answered,Answered,True,True,4.622,16,1,0,False,True
+A02,lookup,Answered,Answered,True,True,1.194,11,1,0,False,True
+A03,lookup,Answered,Answered,True,True,0.759,11,1,0,False,True
+A04,ambiguity,Clarification Needed,Clarification Needed,True,True,0.243,24,0,0,False,True
+A05,lookup,Answered,Answered,True,True,0.87,11,1,0,False,True
+A06,typo,Answered,Answered,True,True,0.762,13,1,0,False,True
+A07,target_vs_actual,Drafted,Drafted,True,True,0.828,21,1,0,False,True
+A08,target_vs_actual,Answered,Answered,True,True,0.815,21,1,0,False,True
+A09,target_vs_actual,Answered,Answered,True,True,0.795,21,1,0,False,True
+A10,comparison,Answered,Answered,True,True,1.644,38,1,0,False,True
+A11,comparison,Answered,Answered,True,True,1.335,28,1,0,False,True
+A12,inventory,Answered,Answered,True,True,2.05,31,1,0,False,True
+A13,feedback,Answered,Answered,True,True,0.991,21,2,0,False,True
+A14,unsupported_metric,Safe Failure,Safe Failure,True,True,0.231,21,0,0,False,True
+A15,out_of_scope,Escalated,Escalated,True,True,0.499,25,0,0,False,True
+A16,out_of_range_date,Safe Failure,Safe Failure,True,True,0.231,18,0,0,False,True
+A17,diagnostic,Escalated,Escalated,True,True,0.207,27,0,0,False,True
+A18,ambiguity,Clarification Needed,Clarification Needed,True,True,0.486,16,0,0,False,True
+A19,retry,Answered,Answered,True,True,0.779,16,1,0,False,True
+A20,retry,Escalated,Escalated,True,True,0.305,19,1,0,False,True
+W01,lookup,Answered,Answered,True,True,13.269,36,1,0,False,True
+W02,weather,Answered,Answered,True,True,0.306,24,0,0,False,True
+W03,weather,Clarification Needed,Clarification Needed,True,True,0.573,17,0,0,False,True
+R01,comparison,Answered,Answered,True,True,2.247,38,1,0,False,True
+C01,typo,Answered,Answered,True,True,0.785,13,1,0,False,True
+C02,synonym,Answered,Answered,True,True,0.764,14,1,0,False,True
+C03,ambiguity,Clarification Needed,Clarification Needed,True,True,0.227,24,0,0,False,True
+C04,unsupported_metric,Safe Failure,Safe Failure,True,True,0.201,20,0,0,False,True
+C05,out_of_scope,Escalated,Escalated,True,True,0.475,25,0,0,False,True
+C06,injection,Escalated,Escalated,True,True,0.221,27,0,0,False,True
+C07,out_of_range_date,Safe Failure,Safe Failure,True,True,0.227,18,0,0,False,True
+C08,context_setup,Answered,Answered,True,True,0.757,14,1,0,False,True
+C09,unresolved_store,Clarification Needed,Clarification Needed,True,True,0.489,16,0,0,False,True
+C10,context_setup,Answered,Answered,True,True,0.74,14,1,0,False,True
+C11,unresolved_date,Clarification Needed,Clarification Needed,True,True,0.225,13,0,0,False,True
+C12,weather_range,Clarification Needed,Clarification Needed,True,True,0.276,32,0,0,False,True
+C13,weather_ignored,Answered,Answered,True,True,1.976,34,1,0,False,True

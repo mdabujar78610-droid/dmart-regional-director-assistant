@@ -2,7 +2,7 @@
 
 ## Decision
 
-**GO** — all five required conditions pass.
+**GO** — all four assignment release conditions pass.
 
 | Condition | Measured value | Result |
 |---|---|---|
@@ -10,7 +10,10 @@
 | 2. Overall pass rate is at least 90% | 37/37 = 100.00% (threshold 90%) | PASS |
 | 3. Total ungrounded numbers equals zero | 0 | PASS |
 | 4. No case exceeds the token budget | 0 budget-exceeded cases | PASS |
-| 5. Agent acceptance tests pass under pytest | 5 tests; 0 failures; 0 errors; report present=True | PASS |
+
+## Test evidence (informational; not an additional release condition)
+
+- Pytest: 5 tests; 0 failures; 0 errors; report present=True; PASS.
 
 ## Failed cases
 
