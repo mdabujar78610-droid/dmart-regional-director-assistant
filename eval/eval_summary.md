@@ -9,16 +9,16 @@ Passed: 37/37 (100.00%)
 |---|---:|
 | Mean estimated tokens per case | 21.30 |
 | Maximum estimated tokens | 38 |
-| Total tool calls | 22 |
+| Total tool calls | 24 |
 | Budget-exceeded cases | 0 |
 
 ## Latency
 
 | Measure | Result |
 |---|---:|
-| Mean latency | 1.318 ms |
-| 90th percentile latency (linear interpolation) | 2.266 ms |
-| Maximum latency | 14.789 ms |
+| Mean latency | 1.054 ms |
+| 90th percentile latency (linear interpolation) | 1.763 ms |
+| Maximum latency | 12.973 ms |
 
 ## Quality
 
