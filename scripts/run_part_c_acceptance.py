@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 
 # Keep weather results deterministic and offline during acceptance execution.
 os.environ["WEATHER_MODE"] = "stub"
+os.environ["AGENT_LOG_PATH"] = str(ROOT / "logs" / "runs.jsonl")
 
 from agent.run_agent import Agent  # noqa: E402
 
