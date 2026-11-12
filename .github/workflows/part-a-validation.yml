@@ -16,6 +16,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: main-validation-all-workflows
+  cancel-in-progress: false
+
 jobs:
   part-a:
     runs-on: ubuntu-latest
@@ -41,7 +45,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/store_daily_clean.csv analysis/cleaning_log.csv analysis/data_quality_report.md analysis/findings.md analysis/executive_summary.md
-          git diff --cached --quiet || (git commit -m "Refresh Part A cleaned data and analysis evidence" && git push)
+          git diff --cached --quiet || (git commit -m "Refresh Part A cleaned data and analysis evidence" && git pull --rebase origin main && git push origin HEAD:main)
       - name: Upload Part A evidence
         if: always()
         uses: actions/upload-artifact@v4
