@@ -7,12 +7,11 @@ on:
       - 'agent/**'
       - 'eval/golden_set.csv'
       - 'scripts/run_part_c_acceptance.py'
-      - '.github/workflows/part-c-acceptance.yml'
       - 'requirements.txt'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   acceptance:
@@ -29,6 +28,13 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Run Part C acceptance
         run: python scripts/run_part_c_acceptance.py
+      - name: Commit generated acceptance evidence
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add logs/runs.jsonl outputs/acceptance_transcript.md
+          git diff --cached --quiet || (git commit -m "Record Part C acceptance evidence" && git push)
       - name: Upload acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
