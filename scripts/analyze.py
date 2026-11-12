@@ -228,6 +228,7 @@ def generate_findings(df):
 
 
 def generate_executive(summary, pune, hyd, corr_stockout, corr_footfall):
+    df = pd.read_csv(DATA / "store_daily_clean.csv")
     by_revenue = summary.sort_values("mean_revenue")
     next_low = float(by_revenue.iloc[1].mean_revenue)
     top = float(by_revenue.iloc[-1].mean_revenue)
