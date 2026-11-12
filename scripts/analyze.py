@@ -59,6 +59,56 @@ def generate_quality(frames):
     clean = frames["Clean daily"]
     inv = frames["Inventory"]
     fb = frames["Feedback"]
+
+    # Assignment-required raw-source inspection and store-specific IQR audit.
+    raw_footfall = pd.to_numeric(raw["footfall"], errors="coerce")
+    dedup = raw.drop_duplicates(keep="first").copy()
+    dedup["footfall"] = pd.to_numeric(dedup["footfall"], errors="coerce")
+    dedup.loc[dedup["footfall"] < 0, "footfall"] = pd.NA
+    lines += [
+        "## Raw daily source checks", "",
+        f"- Raw shape: {raw.shape[0]} rows × {raw.shape[1]} columns.",
+        f"- Exact duplicate rows: {int(raw.duplicated().sum())}.",
+        f"- Raw footfall minimum: {raw_footfall.min():,.0f}; maximum: {raw_footfall.max():,.0f}.",
+        "",
+        "| Column | Data type | Null count |",
+        "|---|---|---:|",
+    ]
+    for col in raw.columns:
+        lines.append(f"| {col} | {raw[col].dtype} | {int(raw[col].isna().sum())} |")
+    lines += [
+        "", "## Per-store raw footfall IQR bounds and outlier rows", "",
+        "Bounds use raw daily data after exact duplicate removal and treating negative footfall as missing. "
+        "Q1 and Q3 use linear interpolation; IQR = Q3 - Q1; bounds are Q1 - 1.5*IQR and Q3 + 1.5*IQR.",
+        "",
+        "| Store | Q1 | Q3 | IQR | Lower bound | Upper bound | Outlier rows |",
+        "|---|---:|---:|---:|---:|---:|---|",
+    ]
+    for store in sorted(dedup["store"].dropna().unique()):
+        group = dedup[dedup["store"] == store]
+        values = group["footfall"].dropna()
+        q1 = float(values.quantile(0.25, interpolation="linear"))
+        q3 = float(values.quantile(0.75, interpolation="linear"))
+        iqr = q3 - q1
+        lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+        outliers = group[group["footfall"].notna() & (
+            (group["footfall"] < lower) | (group["footfall"] > upper)
+        )]
+        details = []
+        for row in outliers.itertuples():
+            side = "below" if row.footfall < lower else "above"
+            details.append(f"{row.store} {row.date}: {row.footfall:g} ({side})")
+        detail = "; ".join(details) if details else "None"
+        lines.append(
+            f"| {store} | {q1:.2f} | {q3:.2f} | {iqr:.2f} | "
+            f"{lower:.2f} | {upper:.2f} | {detail} |"
+        )
+    lines += [
+        "",
+        "Only observations outside the store-specific bounds are listed. "
+        "Raw source values are retained unchanged; these bounds inform the separate cleaning step.",
+        "",
+    ]
     raw_footfall = pd.to_numeric(raw["footfall"], errors="coerce")
     log_path = ANALYSIS / "cleaning_log.csv"
     log = pd.read_csv(log_path) if log_path.exists() else pd.DataFrame()
