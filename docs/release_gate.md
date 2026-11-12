@@ -17,7 +17,9 @@
 Run these commands from the repository root after installing `requirements.txt`:
 
 ```bash
-python -m pytest -q
+python scripts/run_acceptance.py
+python scripts/run_agent_tests.py
+python -m pytest -q --junitxml=pytest-results.xml
 python -m eval.run_eval
 ```
 
