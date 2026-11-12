@@ -30,7 +30,7 @@ Mean stockout hours, highest to lowest: Hyderabad: 3.85; Ahmedabad: 3.19; Bengal
 |---|---:|---:|
 | All stores (450 rows) | -0.152 | 0.918 |
 | Pune (90 rows) | -0.254 | 0.735 |
-| Raw deduplicated non-missing footfall (445 rows) | — | 0.565 |
+| Raw deduplicated non-missing footfall (446 rows) | — | 0.548 |
 
 Correlation describes association and does not prove causation.
 
@@ -39,7 +39,7 @@ Correlation describes association and does not prove causation.
 - **Fact 1:** Pune mean daily revenue is INR 636,358.55, the lowest of the five stores.
 - **Fact 2:** Pune has 70 Poor-performance days out of 90.
 - **Fact 3:** Pune mean stockout duration is 2.32 hours; Hyderabad is highest at 3.85 hours.
-- **Fact 4:** Cleaned revenue-footfall correlation is 0.918; raw deduplicated non-missing baseline is 0.565.
+- **Fact 4:** Cleaned revenue-footfall correlation is 0.918; raw deduplicated non-missing baseline is 0.548.
 
 ## Insights
 
