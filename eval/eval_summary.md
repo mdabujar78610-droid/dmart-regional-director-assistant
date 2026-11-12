@@ -16,9 +16,9 @@ Passed: 37/37 (100.00%)
 
 | Measure | Result |
 |---|---:|
-| Mean latency | 1.054 ms |
-| 90th percentile latency (linear interpolation) | 1.763 ms |
-| Maximum latency | 12.973 ms |
+| Mean latency | 0.733 ms |
+| 90th percentile latency (linear interpolation) | 1.221 ms |
+| Maximum latency | 8.838 ms |
 
 ## Quality
 
