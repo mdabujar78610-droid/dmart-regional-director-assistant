@@ -6,7 +6,11 @@ Build an open-ended, read-only, grounded conversational analytics assistant for 
 
 All supplied datasets are synthetic assignment data. They are not actual DMart or Avenue Supermarts operational records.
 
-## 2. Stakeholder and stores
+## 2. Intended outcome
+
+Deliver a reproducible, read-only analytics assistant that helps the regional director investigate store performance. The deliverable includes a traceable data-quality workflow, verified analysis, explicit agent specification, deterministic offline tests, auditable request logs, and a release decision based on fresh test evidence.
+
+## 3. Stakeholder and stores
 
 - Primary user: Kavita Rao, Regional Director.
 - Business scenario: DMart regional operations.
@@ -134,6 +138,10 @@ The agent must never:
 7. expose customer-identifying or confidential personal information.
 8. Invent data, fabricate evidence, or claim causation from correlation.
 
-## 11. Acceptance and release
+## 11. Decision boundary
+
+The assistant may retrieve, calculate, compare, summarize, and propose evidence-based next steps for human review. It remains read-only: it cannot change store data, inventory, prices, targets, discounts, or business systems; place orders; contact people; or execute transactions. When evidence is incomplete, ambiguous, outside approved scope, or insufficient to establish causation, it must clarify, safely decline, or escalate rather than guess.
+
+## 12. Acceptance and release
 
 Run actual tests from the repository root. Do not treat committed historical outputs as proof for current code. Re-run data generation only when required, then cleaning, analysis, Part A acceptance, pytest, and the golden-set evaluation. The release gate must reflect freshly generated results and must remain NO-GO / NOT YET VALIDATED if any required condition fails or has not been executed.
