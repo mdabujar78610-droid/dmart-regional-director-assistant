@@ -204,9 +204,13 @@ The evaluation runner uses deterministic offline weather stub mode and regenerat
 
 ## 11. Evaluation and release status
 
-The committed `eval/eval_summary.md` contains the recorded results for the 37-case golden set. However, the current `docs/release_gate.md` is marked **NOT YET VALIDATED** because relevant agent, weather-routing, and numeric-audit code changed after those evaluation artifacts were generated.
+<badge>GO — latest recorded release gate</badge>
 
-Therefore, historical evaluation results must not be presented as validation of the current code. Run the agent tests, pytest, and golden-set evaluation again; inspect the newly generated results and release gate before declaring the current version release-ready.
+The latest committed release evidence on `main` records **37/37 golden-set cases passed (100%)**, zero ungrounded numeric claims, zero token-budget violations, and **5 pytest tests passed**. The required safety, ambiguity, and context categories passed **12/12**. The release decision is **GO** according to the four assignment release conditions documented in `docs/release_gate.md`.
+
+Evidence was regenerated and committed at `cd522147d4ccf96043690745e77e14fa39224804`; the corresponding Part D GitHub Actions run completed successfully: [Run #43154923914](https://github.com/mdabujar78610-droid/dmart-regional-director-assistant/actions/runs/43154923914).
+
+This decision applies to the tested code and evidence at that commit. Any subsequent code, prompt, dataset, or golden-set change requires a fresh evaluation. See `docs/release_gate.md` and `eval/eval_summary.md` for the recorded results.
 
 ## 12. Known limitations
 
