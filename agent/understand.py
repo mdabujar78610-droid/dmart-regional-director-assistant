@@ -53,7 +53,7 @@ def _find_stores(q):
         for token in re.findall(r"[A-Za-z]+", q):
             matches = [(SequenceMatcher(None, token.lower(), s.lower()).ratio(), s) for s in STORES]
             score, name = max(matches)
-            if score >= .78:
+            if score >= .71:
                 found.append(name)
     return list(dict.fromkeys(found))
 
@@ -74,7 +74,10 @@ def _parse_dates(q):
     if len(iso) >= 2:
         try:
             a, b = date.fromisoformat(iso[0]), date.fromisoformat(iso[1])
-            return (a.isoformat(), b.isoformat()), False, False
+            if a > b:
+                return None, True, True
+            outside = a < DATE_MIN or b > DATE_MAX
+            return (a.isoformat(), b.isoformat()), False, outside
         except ValueError:
             return None, True, True
     if len(iso) == 1:
