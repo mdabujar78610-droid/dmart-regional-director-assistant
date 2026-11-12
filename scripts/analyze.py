@@ -125,6 +125,12 @@ def generate_quality(frames):
         "Date values are ISO-8601 strings in the CSVs. Inventory is an undated snapshot. Missing feedback ratings are not imputed.",
         "The marketing_spend_inr column is documented as a source field but is prohibited from agent calculations and responses.",
         "Raw source CSVs must remain unchanged.", "",
+        "## Decisions", "",
+        "1. **Duplicates:** remove exact duplicate rows and keep the first copy. Identical rows add no new information and would double-count a store-day; keeping the last has no evidential advantage. The raw CSV still contains all three duplicate rows unchanged.",
+        "2. **Negative footfall:** convert the impossible value -150 to missing, not zero. Zero would falsely assert that no customers visited. The raw CSV still contains -150 unchanged.",
+        "3. **Extreme footfall:** cap values outside each store's IQR bounds rather than deleting the rows. Capping preserves the store-day and its other valid fields while limiting an extreme value's influence. The raw CSV still contains 6,100 and 9,800 unchanged.",
+        "4. **Missing footfall:** impute with the median for the same store, not the mean or zero. The median is robust to skew and unusual traffic; zero would invent a visit count. The raw CSV still contains its four blank footfall cells unchanged.",
+        "",
     ]
     (ANALYSIS / "data_quality_report.md").write_text("\n".join(lines), encoding="utf-8")
 
@@ -161,7 +167,7 @@ def generate_findings(df):
     raw_daily = pd.read_csv(DATA / "store_daily.csv")
     raw_daily = raw_daily.drop_duplicates(keep="first").copy()
     raw_daily["footfall"] = pd.to_numeric(raw_daily["footfall"], errors="coerce")
-    raw_daily.loc[raw_daily["footfall"] < 0, "footfall"] = pd.NA
+    # Keep negative and extreme values in the raw baseline; exclude only missing values.
     raw_baseline = raw_daily.dropna(subset=["footfall"])
     raw_corr_footfall = raw_baseline["revenue_inr"].corr(raw_baseline["footfall"])
     pooled = {
