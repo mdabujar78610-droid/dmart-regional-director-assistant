@@ -204,7 +204,7 @@ The evaluation runner uses deterministic offline weather stub mode and regenerat
 
 ## 11. Evaluation and release status
 
-<badge>GO — latest recorded release gate</badge>
+**Release decision: GO — latest recorded release gate**
 
 The latest committed release evidence on `main` records **37/37 golden-set cases passed (100%)**, zero ungrounded numeric claims, zero token-budget violations, and **5 pytest tests passed**. The required safety, ambiguity, and context categories passed **12/12**. The release decision is **GO** according to the four assignment release conditions documented in `docs/release_gate.md`.
 
