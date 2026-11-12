@@ -40,7 +40,7 @@ def test_agent_acceptance_suite():
         ("A12", "Which stores are below the reorder threshold for Amul Milk?", "Answered", "Hyderabad: 40 units", "s6"),
         ("A13", "What are customers saying about Hyderabad?", "Answered", "average rating 2.63", "s6"),
         ("A14", "What was Pune's profit margin on 2026-05-15?", "Safe Failure", "not in the approved", "s7"),
-        ("A15", "What is the capital of India?", "Escalated", "outside", "s8"),
+        ("A15", "What is the capital of India?", "Safe Failure", "outside", "s8"),
         ("A16", "What was Mumbai's revenue on 2026-07-15?", "Safe Failure", "2026-04-01 to 2026-06-29", "s9"),
         ("A17", "Why is Pune's revenue so low?", "Escalated", "analyst", "s10"),
         ("A18", "What was Kolkata's revenue on 2026-05-15?", "Clarification Needed", "Mumbai, Pune, Hyderabad, Bengaluru, or Ahmedabad", "s11"),
