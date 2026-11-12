@@ -1,0 +1,56 @@
+name: Part A Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/store_daily.csv'
+      - 'data/inventory.csv'
+      - 'data/feedback.csv'
+      - 'scripts/clean_data.py'
+      - 'scripts/analyze.py'
+      - 'scripts/run_acceptance.py'
+      - '.github/workflows/part-a-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  part-a:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Clean committed raw data
+        run: python scripts/clean_data.py
+      - name: Regenerate Part A reports
+        run: python scripts/analyze.py
+      - name: Run Part A acceptance
+        run: python scripts/run_acceptance.py
+      - name: Commit regenerated Part A outputs
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/store_daily_clean.csv analysis/cleaning_log.csv analysis/data_quality_report.md analysis/findings.md analysis/executive_summary.md
+          git diff --cached --quiet || (git commit -m "Refresh Part A cleaned data and analysis evidence" && git push)
+      - name: Upload Part A evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: part-a-validation-evidence
+          path: |
+            data/store_daily_clean.csv
+            analysis/cleaning_log.csv
+            analysis/data_quality_report.md
+            analysis/findings.md
+            analysis/executive_summary.md
+          if-no-files-found: error
