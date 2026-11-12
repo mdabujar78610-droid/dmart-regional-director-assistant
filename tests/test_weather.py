@@ -1,4 +1,4 @@
-"""Rubric checks for deterministic stub and structured weather errors."""
+"""Rubric checks for deterministic stub values and structured weather errors."""
 
 import os
 
