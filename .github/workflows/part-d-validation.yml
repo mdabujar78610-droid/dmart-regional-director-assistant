@@ -18,7 +18,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: part-d-main-validation
+  group: main-validation-all-workflows
+  cancel-in-progress: false
+
+concurrency:
+  group: main-validation-all-workflows
   cancel-in-progress: false
 
 jobs:
