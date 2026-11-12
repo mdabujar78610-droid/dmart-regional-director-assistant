@@ -1,10 +1,29 @@
 # DMart Regional Director Assistant
 
-A data-driven retail diagnosis and grounded conversational analytics project for five synthetic DMart practice stores: Mumbai, Pune, Hyderabad, Bengaluru and Ahmedabad.
+**Store Diagnosis and a Grounded Conversational Analytics Agent**
 
-The project examines Pune's lower average daily revenue and implements a read-only conversational analytics agent. Every reported business number must be traceable to approved fields in the supplied datasets. **All datasets are synthetic practice data, not actual DMart business records.**
+## 1. Project overview
 
-## Repository structure
+The DMart Regional Director Assistant is a read-only, grounded conversational analytics project for a regional director overseeing five synthetic DMart practice stores: Mumbai (S01), Pune (S02), Hyderabad (S03), Bengaluru (S04), and Ahmedabad (S05).
+
+The project investigates store performance, tests the premise that Pune's lower average revenue is explained by stockouts, and implements a deterministic conversational agent that answers supported business questions from approved datasets.
+
+**Data provenance:** All CSV files are synthetic assignment data. They are not actual DMart or Avenue Supermarts operational records.
+
+## 2. Project scope
+
+The repository combines the four assignment parts into one project:
+
+| Part | Project work | Main deliverables |
+|---|---|---|
+| **A — Data Foundation and Analysis** | Generate and inspect source datasets, clean daily data, document data quality, analyze store performance, and test the Pune stockout premise. | `data/`, `scripts/generate_data.py`, `scripts/clean_data.py`, `scripts/analyze.py`, `analysis/`, Part A acceptance output. |
+| **B — Agent Specification** | Define the business requirements, data context, approved metrics, intents, pipeline, validation, safety rules, and acceptance criteria. | `docs/requirement.md`, `docs/data_context.md`, `docs/agent_spec.md`. |
+| **C — Conversational Analytics Agent** | Interpret natural-language questions, route supported intents, validate requests, retrieve approved data, calculate and ground answers, and record request traces. | `agent/`, `logs/runs.jsonl`, `outputs/acceptance_transcript.md`. |
+| **D — Weather and Evaluation** | Provide historical weather through an offline stub or optional live adapter, evaluate the golden set, and maintain the release decision. | `tools/weather.py`, `tests/weather_tool_tests.md`, `eval/`, `docs/release_gate.md`. |
+
+## 3. Repository structure
+
+The folders are organized by project responsibility, not by assignment-part labels. The conversational agent implementation is kept in `agent/`.
 
 ```text
 dmart-regional-director-assistant/
@@ -13,9 +32,9 @@ dmart-regional-director-assistant/
 ├── .gitignore
 ├── data/
 │   ├── store_daily.csv
+│   ├── store_daily_clean.csv
 │   ├── inventory.csv
-│   ├── feedback.csv
-│   └── store_daily_clean.csv
+│   └── feedback.csv
 ├── scripts/
 │   ├── generate_data.py
 │   ├── clean_data.py
@@ -31,15 +50,14 @@ dmart-regional-director-assistant/
 │   ├── requirement.md
 │   ├── data_context.md
 │   ├── agent_spec.md
+│   ├── handover.md
 │   └── release_gate.md
 ├── agent/
-│   ├── __init__.py
 │   ├── understand.py
 │   ├── fetch.py
 │   ├── answer.py
 │   └── run_agent.py
 ├── tools/
-│   ├── __init__.py
 │   └── weather.py
 ├── tests/
 │   ├── test_agent.py
@@ -49,7 +67,6 @@ dmart-regional-director-assistant/
 ├── logs/
 │   └── runs.jsonl
 └── eval/
-    ├── __init__.py
     ├── golden_set.csv
     ├── golden_set_derivation.md
     ├── run_eval.py
@@ -59,21 +76,97 @@ dmart-regional-director-assistant/
     └── eval_summary.md
 ```
 
-## Setup
+## 4. Datasets
 
-Requirements: Python 3.9 or later, pandas and numpy.
+| Dataset | Rows | Grain / purpose |
+|---|---:|---|
+| `data/store_daily.csv` | 453 | Raw daily store records; includes three exact duplicate rows and injected data-quality issues. |
+| `data/store_daily_clean.csv` | 450 | Cleaned daily store data; one row per store per date, with six Part A derived columns. |
+| `data/inventory.csv` | 40 | Store-product inventory snapshot; undated. |
+| `data/feedback.csv` | 200 | Individual customer feedback records; missing ratings are retained. |
+
+The daily reporting period is **1 April 2026 through 29 June 2026** (90 days across five stores).
+
+### Data-cleaning rules
+
+- Preserve the raw source CSV files.
+- Remove exact duplicate daily rows, retaining the first occurrence, and record removals in `analysis/cleaning_log.csv`.
+- Convert negative footfall to missing rather than zero.
+- Apply the documented two-sided, store-specific 1.5 × IQR rule and cap outliers at the applicable bound.
+- Impute missing daily footfall with the median for the same store.
+- Keep missing customer ratings missing; do not impute them.
+
+## 5. Main business finding
+
+Pune has the lowest mean daily revenue among the five stores. However, Pune does **not** have the highest mean stockout duration: Hyderabad has the highest average stockout hours, while Pune ranks fourth. The available evidence therefore does not support the claim that Pune has the lowest revenue because it has the most stockouts.
+
+The analysis also reports revenue-footfall and revenue-stockout associations. Correlation is descriptive and does not establish causation. The available datasets do not prove the cause of Pune's lower revenue.
+
+See `analysis/findings.md`, `analysis/data_quality_report.md`, and `analysis/executive_summary.md` for the detailed analysis and supporting figures.
+
+## 6. Agent data boundaries
+
+The agent uses the three approved datasets:
+
+- `data/store_daily_clean.csv`
+- `data/inventory.csv`
+- `data/feedback.csv`
+
+It may report or calculate using exactly these 11 approved fields:
+
+| Dataset | Approved fields |
+|---|---|
+| Daily store performance | `revenue_inr`, `daily_target_inr`, `footfall`, `stockout_hours`, `discount_pct`, `achievement_pct`, `performance_band` |
+| Inventory snapshot | `stock_units`, `reorder_threshold` |
+| Customer feedback | `rating`, `theme` |
+
+Store, date, product, and record identifiers may be used as dimensions or filters, not as additional metrics.
+
+**Prohibited:** `marketing_spend_inr` and `marketing_efficiency`. The source files retain the marketing-spend column for the assignment's data exercise, but the conversational agent must never query, calculate, summarize, or report it or any dependent metric. Part A-only derived fields such as `revenue_per_footfall`, `shortfall_inr`, and `weekend_flag` are not approved agent metrics.
+
+## 7. Conversational agent behaviour
+
+The agent is deterministic and read-only. It supports nine required intents:
+
+1. `lookup`
+2. `target_vs_actual`
+3. `comparison`
+4. `inventory`
+5. `feedback`
+6. `weather`
+7. `unsupported_metric`
+8. `out_of_scope`
+9. `diagnostic`
+
+Its required processing pipeline is **Interpret → Route → Validate → Query → Calculate → Synthesize → Ground → Record**.
+
+Key controls defined in `docs/agent_spec.md` include:
+
+- Deterministic confidence threshold of **0.70**; ask one focused clarification when confidence is lower or required details are ambiguous.
+- Validate approved metrics, schema, entities, date range, and data sufficiency before querying.
+- Use safe parameterized queries or bounded dataframe operations; never execute raw user SQL.
+- Maximum of **three query attempts** (one initial attempt and at most two retries), retrying only recoverable technical failures.
+- Ground numerical statements in retrieved evidence and write an auditable JSONL request record.
+- Return exactly one documented status: **Answered**, **Drafted**, **Clarification Needed**, **Escalated**, or **Safe Failure**.
+- Do not perform store operations, modify source data, or claim unsupported causation.
+
+## 8. Setup
+
+**Requirements:** Python 3.9 or later, plus the packages listed in `requirements.txt`. SQLite is included with Python.
+
+Run from the repository root:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-## Run the project
+The default project workflow is designed to run locally. The deterministic agent mode and weather stub do not require an API key or hosted database.
 
-Run commands from the repository root.
+## 9. Run the project
 
-### Part A — Data generation, cleaning and analysis
+### Data generation, cleaning, and analysis
 
-Run these in order:
+Run these commands in order when reproducing the data workflow:
 
 ```bash
 python scripts/generate_data.py
@@ -82,112 +175,63 @@ python scripts/analyze.py
 python scripts/run_acceptance.py
 ```
 
-The generator is seeded and deterministic. It creates synthetic source data; the cleaning script writes a separate cleaned dataset and an audit log. Do not manually edit the generated raw CSV files.
+The generator recreates the seeded synthetic source datasets. The cleaning script writes a separate cleaned dataset and cleaning log; it does not edit the raw files. The analysis script regenerates the data-quality report, findings, and executive summary.
 
-### Part C — Conversational analytics agent
+### Run the conversational agent
 
 ```bash
 python scripts/run_agent_tests.py
 python -m agent.run_agent
 ```
 
-The agent uses a local in-memory SQLite data layer and the approved cleaned daily, inventory and feedback datasets. Each request is recorded in `logs/runs.jsonl`. The agent is read-only: it does not execute store operations or modify source data.
+The agent uses local data access, including an in-memory SQLite layer for supported query paths. Each request is recorded in `logs/runs.jsonl`.
 
-### Part D — Weather tool and evaluation
-
-The weather adapter supports deterministic offline stub mode and optional Open-Meteo historical weather mode. Offline evaluation forces stub mode.
+### Run automated tests and golden-set evaluation
 
 ```bash
+python -m pytest -q
 python -m eval.run_eval
 ```
 
-This runs the committed golden set and regenerates:
-- `eval/eval_results.csv`
-- `eval/eval_runs.jsonl`
-- `eval/eval_summary.md`
-- `docs/release_gate.md`
+The evaluation runner uses deterministic offline weather stub mode and regenerates the evaluation result files and release-gate report. Review the generated files in `eval/` and `docs/release_gate.md` after execution.
 
-## Project findings
+## 10. Weather configuration
 
-The cleaned daily dataset contains 450 store-days covering 1 April 2026 through 29 June 2026. Pune has the lowest mean daily revenue among the five stores, but the available data do not show that Pune has the highest mean stockout duration. The stockout explanation is therefore not supported by this evidence. Correlation and co-occurrence do not establish causation.
+`tools/weather.py` supports:
 
-See:
-- `analysis/data_quality_report.md`
-- `analysis/cleaning_log.csv`
-- `analysis/findings.md`
-- `analysis/executive_summary.md`
+- **Stub mode:** deterministic offline values for the five supported store cities; used for reproducible evaluation.
+- **Live mode:** optional historical weather requests through the Open-Meteo archive service. This mode requires network access and is not required for the offline workflow.
 
-## Agent scope and safeguards
+## 11. Evaluation and release status
 
-The agent can answer supported questions about store revenue, targets, footfall, stockout hours, discounts, achievement, performance bands, inventory thresholds and customer feedback.
+The committed `eval/eval_summary.md` contains the recorded results for the 37-case golden set. However, the current `docs/release_gate.md` is marked **NOT YET VALIDATED** because relevant agent, weather-routing, and numeric-audit code changed after those evaluation artifacts were generated.
 
-It must:
-- Use only the approved datasets and approved reportable metrics.
-- Never query or report `marketing_spend_inr`.
-- Validate stores, dates, products, fields and data availability.
-- Ask for clarification when material information is ambiguous.
-- Ground numerical claims in source records and disclose limitations.
-- Treat inventory as an undated snapshot.
-- Avoid causal claims that the data cannot establish.
-- Remain read-only and refuse prohibited operational actions.
+Therefore, historical evaluation results must not be presented as validation of the current code. Run the agent tests, pytest, and golden-set evaluation again; inspect the newly generated results and release gate before declaring the current version release-ready.
 
-See `docs/requirement.md`, `docs/data_context.md` and `docs/agent_spec.md` for the detailed specification.
+## 12. Known limitations
 
-## Evaluation evidence
+- All data is synthetic and covers only the stated 90-day reporting period.
+- The analysis is observational and cannot prove the cause of differences in store performance.
+- Inventory is an undated snapshot, not historical stock availability.
+- SKU-level sales, conversion, basket size, catchment, competitor, and hourly demand data are not supplied.
+- The assistant is a bounded analytics tool; it does not autonomously change store operations.
+- Live weather depends on an external service; offline evaluation uses deterministic stub data.
 
-The committed golden set contains 37 cases. The currently committed evaluation artifacts report 37/37 passing cases; rerun `python -m eval.run_eval` after any code, dataset, specification or golden-set change before relying on the release decision in `docs/release_gate.md`.
+## 13. Iteration-2 backlog
 
-## Limitations
-
-- The datasets are synthetic and must not be represented as actual DMart operational records.
-- The reporting period is limited to 2026-04-01 through 2026-06-29.
-- The analysis is descriptive and observational; it cannot prove why revenue differs between stores.
-- Inventory is an undated snapshot and must not be interpreted as historical inventory.
-- The agent is a bounded, deterministic analytics assistant, not an autonomous store-operations system.
-
-
-## Agent execution pipeline and technique map
-
-The required order is Interpret → Route → Validate → Query → Calculate → Synthesize → Ground → Record. Validation is a pre-query gate: no data query runs until approved fields, entities, dates and query shape pass checks.
-
-| Stage | Implementation | Technique |
+| Priority | Planned enhancement | Required safeguards |
 |---|---|---|
-| Interpret | `agent/understand.py` | Deterministic intent, metric, entity, date and follow-up parsing with a 0.70 confidence threshold |
-| Route | `agent/run_agent.py` | Explicit deterministic dispatch to supported handlers or a no-query response |
-| Validate | `agent/understand.py`, `agent/fetch.py` | Approved table/field allowlists, entity/date/schema validation before execution |
-| Query | `agent/fetch.py`, `agent/run_agent.py` | Bounded dataframe lookups and parameterized SQLite queries; no raw user SQL |
-| Calculate | `agent/run_agent.py`, `agent/answer.py` | Explicit formulas and aggregations; Decimal ROUND_HALF_UP display rounding |
-| Synthesize | `agent/answer.py`, `agent/run_agent.py` | Deterministic answer templates with evidence and limitations; no LLM |
-| Ground | `agent/run_agent.py` | Numeric claim audit against the separately collected grounded-values payload |
-| Record | `agent/run_agent.py` | JSONL audit record with request, route, attempts, evidence, status and latency |
+| **P1 — Store and metric trends** | Support trend questions for approved metrics over validated date ranges. | Reconcile every period value to approved source rows; clarify ambiguous filters and reject unsupported metrics or dates. |
+| **P2 — Multi-turn follow-ups** | Expand follow-up context for store, metric, date range, product, and filters. | Reuse only unambiguous context; never silently replace an explicitly named but unresolved entity. |
+| **P3 — Dated inventory history** | Add dated stock movement or daily inventory data for historical availability analysis. | Validate date coverage and data grain; do not infer historical stock levels from the current undated snapshot. |
 
-The implementation uses a deterministic interpreter and fixed response templates; it does not claim generative-model functionality.
+## 14. Project documentation
 
-## Calculation and rounding policy
-
-Displayed two-decimal values use Python Decimal with ROUND_HALF_UP. Source CSV values are not rewritten by display rounding. Averages use non-null observations, with denominators and missing-data limitations disclosed. Inventory is an undated snapshot and must not be described as historical inventory.
-
-## Iteration-2 backlog
-
-1. **P1 — Language coverage:** expand tested aliases and paraphrases while retaining the 0.70 clarification threshold.
-2. **P1 — Grounding tests:** add regression cases for numeric formatting, percentages, counts, dates and units; require zero ungrounded numeric claims.
-3. **P2 — Evidence-led diagnostics:** add cross-dataset summaries only where approved fields and compatible grains support them; distinguish association from causation.
-4. **P2 — Follow-up context:** expand multi-turn regression coverage; never override an explicitly named unresolved entity with inherited context.
-5. **P3 — Optional hosted database adapter:** test parity with the local parameterized SQLite path without changing allowlists or read-only controls.
-
-## Release validation
-
-Run from the repository root after installing requirements:
-
-```bash
-python scripts/run_acceptance.py
-python scripts/run_agent_tests.py
-python -m pytest -q --junitxml=pytest-results.xml
-python -m eval.run_eval
-```
-
-Review fresh outputs in eval/ and docs/release_gate.md. Historical committed results do not validate changed code or a changed golden set.
-
-## Final handoff
-
-See [CHANGELOG.md](CHANGELOG.md) for dated project changes and [docs/handover.md](docs/handover.md) for the verified baseline test evidence, known limitations, and final reproduction commands. The 12 November 2026 baseline CI run passed Part A acceptance, pytest (2/2), and the 37-case golden evaluation. Any later code change—including the pandas warning cleanup—must pass a fresh workflow run before its own release status is considered validated.
+- [Project requirements](docs/requirement.md)
+- [Data context and schemas](docs/data_context.md)
+- [Agent specification](docs/agent_spec.md)
+- [Handover notes](docs/handover.md)
+- [Release gate](docs/release_gate.md)
+- [Data-quality report](analysis/data_quality_report.md)
+- [Analysis findings](analysis/findings.md)
+- [Executive summary](analysis/executive_summary.md)
