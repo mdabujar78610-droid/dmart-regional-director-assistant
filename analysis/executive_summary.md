@@ -7,15 +7,17 @@
 
 ## Headline finding
 
-Pune has the lowest mean daily revenue. The premise that it is lowest because it has the most stockout hours is not supported.
+Pune has the lowest mean daily revenue. The evidence does not support the premise that Pune is lowest because it has the most stockout hours: Hyderabad has the highest mean stockout duration, while Pune ranks fourth.
 
 ## Magnitude
 
-Pune averages INR 636,358.55 per day, 18.7% below the next-lowest store and 40.2% below Mumbai. Pune averages 2.32 stockout hours; Hyderabad is highest at 3.85 hours. Pune has 70 Poor days out of 90.
+Pune averages INR 636,358.55 per day versus the all-store mean of INR 861,535.24: **26.14% below the all-store mean**. Pune's mean footfall is 1,517.71 versus 2,023.59 across all stores: **25.00% below the all-store mean**. Pune's revenue per footfall is INR 419.29 versus INR 425.75 across all stores: **1.52% below the all-store figure**.
+
+Pune averages 2.32 stockout hours; Hyderabad is highest at 3.85 hours. Pune has 70 Poor days out of 90.
 
 ## What is and is not driving the finding
 
-Pune ranks fourth of five for mean stockout hours. Revenue-stockout correlation is -0.152; revenue-footfall correlation is 0.918. These associations do not prove causation. Inventory is an undated snapshot.
+Across cleaned store-days, revenue-footfall correlation is 0.918 and revenue-stockout correlation is -0.152. These are associations, not proof of causation. The descriptive comparison indicates a substantially lower footfall level in Pune; it does not establish why footfall is lower. Inventory is an undated snapshot and cannot establish historical stock availability.
 
 ## Supporting facts
 
@@ -25,7 +27,7 @@ Pune ranks fourth of five for mean stockout hours. Revenue-stockout correlation 
 
 ## Open hypotheses and data needed
 
-Unconfirmed: demand/catchment differences and assortment, pricing or conversion issues. Test with catchment and competitor data, hourly visits, SKU-level sales and availability, price/promotion history, conversion, basket size and feedback.
+Unconfirmed hypotheses include local demand/catchment differences and assortment, pricing or conversion issues. Test these using catchment and competitor data, hourly visits, SKU-level sales and availability, price/promotion history, conversion, basket size and feedback.
 
 ## Recommendation
 
