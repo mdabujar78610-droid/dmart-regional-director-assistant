@@ -40,6 +40,7 @@ dmart-regional-director-assistant/
 │   ├── clean_data.py
 │   ├── analyze.py
 │   ├── run_acceptance.py
+│   ├── run_part_c_acceptance.py
 │   └── run_agent_tests.py
 ├── analysis/
 │   ├── data_quality_report.md
@@ -61,6 +62,7 @@ dmart-regional-director-assistant/
 │   └── weather.py
 ├── tests/
 │   ├── test_agent.py
+│   ├── test_weather.py
 │   └── weather_tool_tests.md
 ├── outputs/
 │   └── acceptance_transcript.md
