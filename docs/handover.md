@@ -26,24 +26,26 @@ The workflow logs also show that analysis reports were regenerated and validatio
 
 ## Current release status
 
-The successful GO result above applies only to baseline commit `445006102bf12eb3c095be6bc5aa2186da65f724`. It is historical evidence, not a release approval for the current `main` branch. The current release decision is **NOT YET VALIDATED** until the required tests and golden-set evaluation are rerun against the exact current commit. See `docs/release_gate.md` for the validation steps.
+The current `main` branch has a recorded **GO** release decision in `docs/release_gate.md`.
 
-## Follow-up cleanup
+Latest verified evidence:
+- Evidence commit: `cd522147d4ccf96043690745e77e14fa39224804`.
+- Part D GitHub Actions run [#43154923914](https://github.com/mdabujar78610-droid/dmart-regional-director-assistant/actions/runs/43154923914): completed successfully.
+- Part A validation workflow run [#43154788967](https://github.com/mdabujar78610-droid/dmart-regional-director-assistant/actions/runs/43154788967): successful.
+- Part C acceptance: 20/20 passed.
+- Agent acceptance checks: 20/20 passed.
+- Pytest: 5 passed, 0 failures.
+- Golden-set evaluation: 37/37 passed (100%).
+- Required safety, ambiguity, and context categories: 12/12 passed.
+- Ungrounded numeric claims: 0.
+- Token-budget violations: 0.
+- Release decision: **GO**, according to the assignment's four documented release conditions.
 
-The baseline workflow emitted pandas deprecation warnings because two scripts used `.dt.dayofweek`. The accessor has been updated to `.dt.day_of_week` in:
+The evidence commit updates `docs/release_gate.md`, `eval/eval_results.csv`, `eval/eval_runs.jsonl`, `eval/eval_summary.md`, `logs/runs.jsonl`, and `outputs/acceptance_transcript.md`. The decision applies to the code and evidence tested at that commit; rerun validation after any relevant code, prompt, dataset, or golden-set change.
 
-- `scripts/clean_data.py`
-- `scripts/run_acceptance.py`
+## Final presentation review
 
-These edits are on branch `chore/final-handoff-pandas-warning`. A fresh CI run is required before treating that branch's code as validated. Do not transfer the baseline GO decision to a newer commit without rerunning the workflow.
-
-## Recommended next steps
-
-1. Review the cleanup branch and its diff.
-2. Run the GitHub Actions quality-gate workflow on that branch.
-3. If it passes, merge the branch through the repository's normal review process.
-4. Re-run the release gate on the merged main commit.
-5. Keep the generated evaluation and analysis artifacts from the final run as the submission evidence.
+The repository has a responsibility-based folder structure and a root README describing the project, datasets, approved metric boundaries, setup, execution, evaluation, and limitations. Before submission, manually open the README and key evidence files in GitHub to confirm they render as expected. No additional feature work is required by the current recorded release gate.
 
 ## Reproduction commands
 
