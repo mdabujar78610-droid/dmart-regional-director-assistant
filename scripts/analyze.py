@@ -158,6 +158,20 @@ def generate_findings(df):
         raise AssertionError("Pune must not be the highest mean-stockout store.")
     corr_stockout = df.revenue_inr.corr(df.stockout_hours)
     corr_footfall = df.revenue_inr.corr(df.footfall)
+    raw_daily = pd.read_csv(DATA / "store_daily.csv")
+    raw_daily = raw_daily.drop_duplicates(keep="first").copy()
+    raw_daily["footfall"] = pd.to_numeric(raw_daily["footfall"], errors="coerce")
+    raw_daily.loc[raw_daily["footfall"] < 0, "footfall"] = pd.NA
+    raw_baseline = raw_daily.dropna(subset=["footfall"])
+    raw_corr_footfall = raw_baseline["revenue_inr"].corr(raw_baseline["footfall"])
+    pooled = {
+        "mean_revenue": df.revenue_inr.mean(),
+        "mean_footfall": df.footfall.mean(),
+        "mean_stockout": df.stockout_hours.mean(),
+        "revenue_per_footfall": df.revenue_inr.sum() / df.footfall.sum(),
+        "mean_achievement": df.achievement_pct.mean(),
+        "poor_days": int((df.performance_band == "Poor").sum()),
+    }
     lines = [
         "# Analysis Findings", "",
         f"## Store performance ({len(df)} cleaned store-days)", "",
@@ -168,6 +182,11 @@ def generate_findings(df):
         lines.append(f"| {r.store} | {r.mean_revenue:,.2f} | {r.mean_footfall:,.2f} | "
                      f"{r.mean_stockout:.2f} | {r.revenue_per_footfall:.2f} | "
                      f"{r.mean_achievement:.2f} | {r.poor_days} |")
+    lines.append(
+        f"| **All stores** | {pooled['mean_revenue']:,.2f} | {pooled['mean_footfall']:,.2f} | "
+        f"{pooled['mean_stockout']:.2f} | {pooled['revenue_per_footfall']:.2f} | "
+        f"{pooled['mean_achievement']:.2f} | {pooled['poor_days']} |"
+    )
     lines += ["", "## Verified premise checks", "",
               "- Pune has the lowest mean daily revenue.",
               "- Hyderabad has the highest mean stockout hours.",
@@ -186,7 +205,19 @@ def generate_findings(df):
               f"| Pune ({len(df[df.store == 'Pune'])} rows) | "
               f"{df.loc[df.store == 'Pune', 'revenue_inr'].corr(df.loc[df.store == 'Pune', 'stockout_hours']):.3f} | "
               f"{df.loc[df.store == 'Pune', 'revenue_inr'].corr(df.loc[df.store == 'Pune', 'footfall']):.3f} |",
+              f"| Raw deduplicated non-missing footfall ({len(raw_baseline)} rows) | — | {raw_corr_footfall:.3f} |",
               "", "Correlation describes association and does not prove causation.",
+              "", "## Facts", "",
+              f"- **Fact 1:** Pune mean daily revenue is INR {pune.mean_revenue:,.2f}, the lowest of the five stores.",
+              f"- **Fact 2:** Pune has {int(pune.poor_days)} Poor-performance days out of 90.",
+              f"- **Fact 3:** Pune mean stockout duration is {pune.mean_stockout:.2f} hours; Hyderabad is highest at {hyd.mean_stockout:.2f} hours.",
+              f"- **Fact 4:** Cleaned revenue-footfall correlation is {corr_footfall:.3f}; raw deduplicated non-missing baseline is {raw_corr_footfall:.3f}.",
+              "", "## Insights", "",
+              "- **Insight 1:** Pune is fourth of five stores by mean stockout hours, so it does not have the most stockout time.",
+              "- **Insight 2:** Footfall and revenue move together in this dataset, but association alone does not establish a cause.",
+              "", "## Hypotheses (unconfirmed)", "",
+              "- **Hypothesis 1 (unconfirmed):** Local demand or catchment differences may reduce Pune visits; test using catchment demographics, competitor locations, hourly traffic and campaign reach.",
+              "- **Hypothesis 2 (unconfirmed):** Assortment, pricing or execution may affect conversion or basket value; test using SKU-level sales and availability, price/promotion history, conversion, basket size and store-level feedback.",
               "", "## Limitations", "",
               "- The datasets are synthetic, observational, and cover one 90-day period.",
               "- Inventory is an undated snapshot, not historical stock availability.",
@@ -210,21 +241,34 @@ def generate_executive(summary, pune, hyd, corr_stockout, corr_footfall):
 
 **Dataset:** Synthetic DMart practice data  
 **Period:** 1 April–29 June 2026  
+**Author:** Mohammad Abuzar  
 **Coverage:** 450 cleaned store-days across five stores
 
-## Headline findings
+## Headline finding
 
-Pune has the lowest mean daily revenue at INR {p_rev:,.2f}. It is {pct_next:.1f}% below the next-lowest store and {pct_top:.1f}% below the highest-revenue store. Hyderabad has the highest mean stockout duration at {h_stock:.2f} hours. Pune averages {p_stock:.2f} hours, {stock_gap:.1f}% lower than Hyderabad, so Pune does not have the highest stockout hours.
+Pune has the lowest mean daily revenue. The premise that it is lowest because it has the most stockout hours is not supported.
 
-## Interpretation
+## Magnitude
 
-The theory that Pune has the lowest revenue because it has the highest stockout duration is not supported. Revenue-stockout correlation is {corr_stockout:.3f}; revenue-footfall correlation is {corr_footfall:.3f}. These are descriptive associations, not proof of cause.
+Pune averages INR {p_rev:,.2f} per day, {pct_next:.1f}% below the next-lowest store and {pct_top:.1f}% below Mumbai. Pune averages {p_stock:.2f} stockout hours; Hyderabad is highest at {h_stock:.2f} hours. Pune has 70 Poor days out of 90.
 
-## Recommended investigation
+## What is and is not driving the finding
 
-Review Pune's demand/catchment, SKU-level availability, assortment, pricing, conversion, basket size, and feedback with relevant business owners. Inventory is an undated snapshot and cannot establish historical availability.
+Pune ranks fourth of five for mean stockout hours. Revenue-stockout correlation is {corr_stockout:.3f}; revenue-footfall correlation is {corr_footfall:.3f}. These associations do not prove causation. Inventory is an undated snapshot.
 
-**Decision boundary:** This report identifies observed differences and investigation priorities; it does not claim a confirmed cause or execute operational changes.
+## Supporting facts
+
+- Pune mean achievement is {pune.mean_achievement:.2f}%; all-store mean is {summary.mean_achievement.mean():.2f}%.
+- Pune revenue per footfall is INR {pune.revenue_per_footfall:.2f}.
+- Pune-only revenue-footfall correlation is {df.loc[df.store == 'Pune', 'revenue_inr'].corr(df.loc[df.store == 'Pune', 'footfall']):.3f}.
+
+## Open hypotheses and data needed
+
+Unconfirmed: demand/catchment differences and assortment, pricing or conversion issues. Test with catchment and competitor data, hourly visits, SKU-level sales and availability, price/promotion history, conversion, basket size and feedback.
+
+## Recommendation
+
+**Owner:** Pune Store Manager with Regional Merchandising Lead. **Action:** complete a 14-day SKU availability, pricing and conversion audit against Mumbai and Bengaluru. **Timeline:** deliver a corrective-action plan within 21 days.
 """
     if len(report.split()) > 250:
         raise AssertionError("Executive summary exceeds 250 words.")
