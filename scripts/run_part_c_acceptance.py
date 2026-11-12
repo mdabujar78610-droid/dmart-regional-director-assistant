@@ -1,5 +1,7 @@
 """Execute the official A01-A20 Part C acceptance cases.
 
+The workflow also commits the generated transcript and JSONL evidence after a passing run.
+
 Run from the repository root:
     python scripts/run_part_c_acceptance.py
 
