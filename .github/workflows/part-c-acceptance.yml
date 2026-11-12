@@ -13,6 +13,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: main-validation-all-workflows
+  cancel-in-progress: false
+
 jobs:
   acceptance:
     runs-on: ubuntu-latest
@@ -35,8 +39,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add logs/runs.jsonl outputs/acceptance_transcript.md
           if ! git diff --cached --quiet; then
-            git pull --rebase origin main
             git commit -m "Record Part C acceptance evidence"
+            git pull --rebase origin main
             git push origin HEAD:main
           fi
       - name: Upload acceptance evidence
