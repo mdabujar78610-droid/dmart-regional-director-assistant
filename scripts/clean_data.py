@@ -16,10 +16,7 @@ RAW_PATH = DATA / "store_daily.csv"
 CLEAN_PATH = DATA / "store_daily_clean.csv"
 LOG_PATH = ANALYSIS / "cleaning_log.csv"
 
-LOG_COLUMNS = [
-    "operation", "store", "date", "column", "old_value", "new_value",
-    "old_footfall", "new_footfall", "rule", "details",
-]
+LOG_COLUMNS = ["store", "date", "old_footfall", "new_footfall", "rule"]
 
 
 def rounded(value):
@@ -51,19 +48,6 @@ def main():
 
     # Record each exact duplicate before removing it; retain the first copy.
     duplicate_mask = df.duplicated(keep="first")
-    for _, row in df.loc[duplicate_mask].iterrows():
-        log_rows.append({
-            "operation": "remove_duplicate",
-            "store": row["store"],
-            "date": row["date"],
-            "column": "record",
-            "old_value": "duplicate row",
-            "new_value": "removed",
-            "old_footfall": row["footfall"],
-            "new_footfall": "",
-            "rule": "duplicate_removed",
-            "details": "Exact duplicate; first occurrence retained.",
-        })
     df = df.loc[~duplicate_mask].copy().reset_index(drop=True)
     duplicates_removed = original_rows - len(df)
 
@@ -186,21 +170,6 @@ def main():
         ["Excellent", "Good"],
         default="Poor",
     )
-
-    # Record each deterministic derived-column operation in the audit log.
-    for column, formula in derived.items():
-        log_rows.append({
-            "operation": "derive_column",
-            "store": "ALL",
-            "date": "",
-            "column": column,
-            "old_value": "",
-            "new_value": "created",
-            "old_footfall": "",
-            "new_footfall": "",
-            "rule": "derived_column",
-            "details": formula,
-        })
 
     df.to_csv(CLEAN_PATH, index=False)
     pd.DataFrame(log_rows, columns=LOG_COLUMNS).to_csv(LOG_PATH, index=False)
