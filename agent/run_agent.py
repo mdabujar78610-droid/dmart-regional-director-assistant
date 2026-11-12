@@ -138,7 +138,7 @@ class Agent:
         if intent == "unsupported_metric":
             return answer_result("Safe Failure", "That field is not in the approved metric set. I did not query it.")
         if intent == "out_of_scope":
-            return answer_result("Safe Failure", "This request is outside the supported read-only DMart store-analysis scope. I did not query data or perform any action.")
+            return answer_result("Escalated", "This request is outside the supported read-only DMart store-analysis scope. I did not query data or perform any action.")
         if intent == "diagnostic":
             return answer_result("Escalated", "A diagnostic explanation of causes requires an analyst. The available data can show associations, but cannot establish why revenue is low.")
         if p.get("out_of_range"):
