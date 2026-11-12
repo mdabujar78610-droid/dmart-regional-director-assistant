@@ -77,7 +77,6 @@ class Agent:
     def _query(self, sql, params, table, fields, failures=0):
         self._route = "sql"
         self._tool_calls += 1
-        self._tools_called.append("sqlite_query")
         self._executed = sql
         try:
             result, attempts = run_query(lambda: sql_query(self.con, sql, params, table, fields), 3, failures)
@@ -90,7 +89,6 @@ class Agent:
     def _python_daily(self, store, day, failures=0):
         self._route = "python"
         self._tool_calls += 1
-        self._tools_called.append("daily_lookup")
         self._executed = "daily_lookup(store, date) using approved dataframe columns"
         from .fetch import validate
         validate(TABLE, ["date", "store", "revenue_inr", "daily_target_inr", "footfall", "stockout_hours", "discount_pct", "achievement_pct", "performance_band"])
@@ -150,6 +148,10 @@ class Agent:
                 return answer_result("Clarification Needed",
                     "Please specify one supported store city (Mumbai, Pune, Hyderabad, Bengaluru, or Ahmedabad) and one date in the available period.")
             from tools.weather import get_weather
+            self._route = "weather"
+            self._tool_calls += 1
+            self._tools_called.append("weather_tool")
+            self._executed = "tools.weather.get_weather(city, date)"
             weather = get_weather(store, p["date"])
             if not weather.get("ok"):
                 return answer_result("Safe Failure", f"Weather lookup unavailable: {weather.get('error', 'unknown error')}.")
@@ -172,6 +174,10 @@ class Agent:
                 evidence = [{"dataset":"store_daily_clean.csv","fields":[metric,"store","date"],"filters":{"store":store,"date":p["date"]}}]
                 if re.search(r"\b(weather|rain|temperature|humidity|hot|cold)\b", q, re.I):
                     from tools.weather import get_weather
+                    self._route = "weather"
+                    self._tool_calls += 1
+                    self._tools_called.append("weather_tool")
+                    self._executed = "daily_lookup(store, date) + tools.weather.get_weather(city, date)"
                     weather = get_weather(store, p["date"])
                     if weather.get("ok"):
                         weather_values = {key: weather[key] for key in ("temperature_c", "humidity_pct", "wind_kmh", "rain_mm")}
