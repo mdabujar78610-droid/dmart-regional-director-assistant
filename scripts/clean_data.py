@@ -179,7 +179,7 @@ def main():
         df["daily_target_inr"] - df["revenue_inr"]
     ).round(2)
     df["weekend_flag"] = np.where(
-        pd.to_datetime(df["date"]).dt.dayofweek >= 5, "Yes", "No"
+        pd.to_datetime(df["date"]).dt.day_of_week >= 5, "Yes", "No"
     )
     df["performance_band"] = np.select(
         [df["achievement_pct"] >= 100, df["achievement_pct"] >= 75],

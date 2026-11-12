@@ -187,3 +187,7 @@ python -m eval.run_eval
 ```
 
 Review fresh outputs in eval/ and docs/release_gate.md. Historical committed results do not validate changed code or a changed golden set.
+
+## Final handoff
+
+See [CHANGELOG.md](CHANGELOG.md) for dated project changes and [docs/handover.md](docs/handover.md) for the verified baseline test evidence, known limitations, and final reproduction commands. The 12 November 2026 baseline CI run passed Part A acceptance, pytest (2/2), and the 37-case golden evaluation. Any later code change—including the pandas warning cleanup—must pass a fresh workflow run before its own release status is considered validated.
